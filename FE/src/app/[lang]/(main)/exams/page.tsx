@@ -1,3 +1,4 @@
+import { APP_URL } from '@/src/utils/app-url';
 import { ExamList } from "@/src/views/ExamList";
 import { getDictionary } from '@/src/utils/dictionaries';
 import type {Locale} from '@/src/utils/i18n'
@@ -5,7 +6,7 @@ import { examService } from '@/src/services/examService';
 import {notFound} from "next/navigation";
 import type { Metadata } from 'next';
 import { cache } from 'react';
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://itshiken.io.vn';
+const baseUrl = APP_URL;
 
 
 const getExamsCached = cache(async () =>

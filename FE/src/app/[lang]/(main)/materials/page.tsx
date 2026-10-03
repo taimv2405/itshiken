@@ -1,3 +1,4 @@
+import { APP_URL } from '@/src/utils/app-url';
 import { getDictionary } from '@/src/utils/dictionaries';
 import type { Locale } from '@/src/utils/i18n';
 import { Materials } from '@/src/views/Materials';
@@ -5,7 +6,7 @@ import type { Metadata } from 'next';
 import { cache } from 'react';
 import { materialService } from '@/src/services/materialService';
 
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://itshiken.io.vn';
+const baseUrl = APP_URL;
 
 const getMaterialsCached = cache(async () => {
     try {

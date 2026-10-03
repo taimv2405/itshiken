@@ -1,4 +1,4 @@
-import { BE_URL } from '@/src/utils/constans';
+import { BE_URL } from '@/src/utils/be-url.mjs';
 import { refreshAccessTokenAction } from '@/src/actions/authActions';
 
 export type NextFetchOptions = {

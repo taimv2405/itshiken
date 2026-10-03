@@ -1,13 +1,13 @@
 import type { NextConfig } from "next";
+import { BE_URL } from "./src/utils/be-url.mjs";
 
 const nextConfig: NextConfig = {
   /* config options here */
     async rewrites() {
-      const beUrl = process.env.BE_URL || 'http://62.72.46.7:8080';
       return [
         {
           source: '/api/:path*',
-          destination: `${beUrl}/api/:path*`,
+          destination: `${BE_URL}/api/:path*`,
         },
       ];
     },

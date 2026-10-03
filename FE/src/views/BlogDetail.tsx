@@ -328,7 +328,7 @@ export default function BlogDetail({ id }: { id: string }) {
 
                 {/* INTERNAL LINK 1 */}
                 <a
-                    href="https://itshiken.io.vn/vi/exams"
+                    href="/vi/exams"
                     className="flex items-center gap-4 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800/50 rounded-md p-4 my-8 hover:shadow-md hover:border-blue-300 dark:hover:border-blue-700 transition-all duration-200 group"
                 >
                     <div>
@@ -541,7 +541,7 @@ export default function BlogDetail({ id }: { id: string }) {
                 </ul>
                 {/* INTERNAL LINK 2 */}
                 <a
-                    href="https://itshiken.io.vn/vi/materials"
+                    href="/vi/materials"
                     className="flex items-center gap-4  dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800/50 rounded-md p-4 my-8 hover:shadow-md hover:border-blue-300 dark:hover:border-blue-700 transition-all duration-200 group"
                 >
                     <div>
@@ -638,7 +638,7 @@ export default function BlogDetail({ id }: { id: string }) {
                     </p>
 
                     <Button asChild className="text-lg !py-6">
-                        <Link href="https://itshiken.io.vn/vi/exams">Thi Thử Ngay – Miễn Phí</Link>
+                        <Link href="/vi/exams">Thi Thử Ngay – Miễn Phí</Link>
                     </Button>
                 </div>
             </article>

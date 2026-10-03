@@ -1,3 +1,4 @@
+import { APP_URL } from '@/src/utils/app-url';
 import type { Metadata, Viewport } from 'next';
 import { LanguageProvider } from '@/src/contexts/LanguageContext';
 import '@/src/styles/index.css';
@@ -8,7 +9,7 @@ import { Toaster } from '@/src/components/ui/sonner';
 import { ThemeProvider } from '@/src/components/theme-provider';
 import { GoogleAnalytics } from '@next/third-parties/google';
 
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://itshiken.io.vn';
+const baseUrl = APP_URL;
 
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
     const { lang } = await params;

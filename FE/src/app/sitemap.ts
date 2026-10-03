@@ -1,9 +1,9 @@
+import { APP_URL } from '@/src/utils/app-url';
 import { MetadataRoute } from 'next';
 import { examService } from '@/src/services/examService';
 import { materialService } from '@/src/services/materialService';
 
-// 1. Thêm fallback để chống lỗi lúc build
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://itshiken.io.vn';
+const baseUrl = APP_URL;
 
 async function getMaterialsLastModified(): Promise<Date> {
     try {

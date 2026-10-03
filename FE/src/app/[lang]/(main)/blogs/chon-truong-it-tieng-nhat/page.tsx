@@ -1,10 +1,11 @@
+import { APP_URL } from '@/src/utils/app-url';
 import React from 'react';
 import { Metadata } from 'next';
 import ContentVi from './content-vi';
 import ContentEn from './content-en';
 import ContentJa from './content-ja';
 
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://itshiken.io.vn';
+const baseUrl = APP_URL;
 
 const commonData = {
     id: 'chon-truong-it-tieng-nhat',

@@ -1,9 +1,10 @@
+import { APP_URL } from '@/src/utils/app-url';
 import { getDictionary } from '@/src/utils/dictionaries';
 import type { Locale } from '@/src/utils/i18n';
 import { FlashcardDecks } from '@/src/views/FlashcardDecks';
 import type { Metadata } from 'next';
 
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://itshiken.io.vn';
+const baseUrl = APP_URL;
 
 const TOP_DECKS = [
     { id: '1', name: 'Từ vựng IT Passport cơ bản' },

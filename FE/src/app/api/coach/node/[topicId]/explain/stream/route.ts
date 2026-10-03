@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import { BE_URL } from '@/src/utils/be-url.mjs';
 
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
@@ -13,12 +14,11 @@ export async function GET(
     }
 
     const { topicId } = await params;
-    const beUrl = process.env.BE_URL ?? 'http://62.72.46.7:8080';
     const cookie = req.headers.get('cookie') ?? '';
 
     try {
         const beRes = await fetch(
-            `${beUrl}/api/coach/node/${topicId}/explain/stream?userId=${userId}`,
+            `${BE_URL}/api/coach/node/${topicId}/explain/stream?userId=${userId}`,
             {
                 headers: {
                     cookie,

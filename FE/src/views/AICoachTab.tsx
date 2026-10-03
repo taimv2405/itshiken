@@ -30,7 +30,7 @@ import {
     RotateCcw
 } from 'lucide-react';
 import Link from 'next/link';
-import { BE_URL } from '../utils/constans';
+import { BE_URL } from '../utils/be-url.mjs';
 import {AnalysisIcon} from "@/src/components/svg-icon/analysis";
 import { CreateIcon } from '@/src/components/svg-icon/create';
 import { PathLearnIcon } from '@/src/components/svg-icon/path';

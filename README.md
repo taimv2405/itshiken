@@ -2,7 +2,7 @@
 
 Nền tảng học tập và luyện thi trực tuyến chứng chỉ IT Nhật Bản (IT Passport, FE, AP...).
 
-**Website:** [https://itshiken.io.vn/vi](https://itshiken.io.vn/vi)
+**Website:** [https://itshiken.app/vi](https://itshiken.app/vi)
 
 ## Tính năng
 
@@ -117,10 +117,7 @@ Frontend chạy trực tiếp bằng Node.js.
 cd FE
 npm install
 
-# Tạo file .env và cấu hình
-echo -e "BE_URL=http://localhost:8080\nNEXT_PUBLIC_APP_URL=http://localhost:3000" > .env
-
-# Chạy môi trường dev
+# Chạy môi trường dev (đã có sẵn FE/.env.development, cần ghi đè thì tạo FE/.env.local)
 npm run dev 
 ```
 

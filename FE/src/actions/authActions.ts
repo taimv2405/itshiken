@@ -2,7 +2,7 @@
 
 import { cookies } from 'next/headers';
 import { ApiError, apiClient, type ApiEnvelope } from '@/src/services/client';
-import { BE_URL } from '@/src/utils/constans';
+import { BE_URL } from '@/src/utils/be-url.mjs';
 
 const extractCookieValue = (setCookie: string | null, name: string) => {
     if (!setCookie) return undefined;

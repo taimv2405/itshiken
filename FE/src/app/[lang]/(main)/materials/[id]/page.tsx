@@ -1,3 +1,4 @@
+import { APP_URL } from '@/src/utils/app-url';
 import type { Metadata } from 'next';
 import { materialService, type Material } from '@/src/services/materialService';
 import type { Locale } from '@/src/utils/i18n';
@@ -6,7 +7,7 @@ import { notFound } from 'next/navigation';
 import { cache } from 'react';
 import { MaterialDetail } from '@/src/views/MaterialDetail';
 
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://itshiken.io.vn';
+const baseUrl = APP_URL;
 
 const getMaterialCached = cache(async (id: string): Promise<Material | null> => {
     try {

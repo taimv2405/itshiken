@@ -1,10 +1,11 @@
+import { APP_URL } from '@/src/utils/app-url';
 import React from 'react';
 import { ArticleList } from '@/src/views/ArticleList';
 import { getDictionary } from '@/src/utils/dictionaries';
 import type { Locale } from '@/src/utils/i18n';
 import type { Metadata } from 'next';
 
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://itshiken.io.vn';
+const baseUrl = APP_URL;
 
 const titles = {
     vi: 'Blog IT - Kiến thức & lộ trình học IT',
