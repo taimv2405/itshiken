@@ -24,7 +24,10 @@ export async function generateMetadata({params}: { params: Promise<{ lang: strin
 export default async function Page({params}: { params: Promise<{ lang: string }>}) {
     const { lang } = await  params;
     const t = await getDictionary(lang as Locale)
-    const popularExams = await examService.getPopularExams();
+    const popularExams = await examService.getPopularExams().catch((error) => {
+        console.error('Error fetching popular exams:', error);
+        return [];
+    });
 
     return <Home t={t} lang={lang} popularExams={popularExams} />;
 }
