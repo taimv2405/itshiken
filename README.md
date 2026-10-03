@@ -16,6 +16,8 @@ Nền tảng học tập và luyện thi trực tuyến chứng chỉ IT Nhật 
 
 ## Kiến trúc hệ thống
 
+> ⚠️ **Đang refactor (nhánh `refactor/monolith`):** backend đang được gộp từ microservice thành một modular monolith. Mọi mô tả backend dưới đây (kiến trúc, cấu trúc thư mục, cách chạy, biến môi trường) là **trạng thái trước refactor** và sẽ sai dần trong quá trình chuyển đổi. Trạng thái và kế hoạch hiện tại xem tại [`BE/docs/MONOLITH_PLAN.md`](BE/docs/MONOLITH_PLAN.md). README này sẽ được viết lại khi refactor xong.
+
 Hệ thống được xây dựng theo kiến trúc Microservices với Spring Boot cho Backend và Next.js cho Frontend.
 ```
                 ┌─────────────┐
