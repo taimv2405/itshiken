@@ -35,7 +35,9 @@ Nhánh 2, 3, 4 không phụ thuộc nhau về code nên làm song song được.
 ### Quyết định đã chốt
 - **Modular monolith**: các module `common`, `identity` (auth + user gộp lại), `exam`, `material`, `ai`, và `app` (module duy nhất có main class).
 - **1 database, chia schema theo module** (ở Phase 8): `identity`, `exam`, `material`, `ai`. Extension `vector` và bảng lịch sử Flyway nằm ở `public`.
-- **Dữ liệu cũ chỉ là dev/demo**, nên chỉ copy *nội dung*: đề, câu hỏi, topic, tài liệu, knowledge_chunks. User, attempt và rating bỏ.
+- **Dữ liệu cũ chỉ là dev/demo**, nên chỉ copy *nội dung*: đề, câu hỏi, topic, tài liệu, knowledge_chunks.
+  - **Đã đổi (2026-10-04): GIỮ cả user và lịch sử làm bài.** Đã copy thêm `users`, `credentials`, `exam_attempts`, `attempt_answers`, `exam_ratings`, `user_topic_mastery`. `refresh_tokens` vẫn bỏ (token cũ vô hiệu vì `JWT_SECRET` mới). Mật khẩu là bcrypt nên user cũ đăng nhập lại bình thường.
+  - Vì vậy DB mới **có sẵn 53 user**. Chỗ nào trong plan ghi "DB mới chưa có user" thì không còn đúng.
 - **Ingest RAG chỉ chạy ở máy local**: bật `INGEST_ENABLED=true` và ghi thẳng vào Neon. Trên Render thì chặn, vì 3 lý do:
   - code đọc PDF từ ổ đĩa, mà Render không có PDF;
   - `POST /ingest` là request đồng bộ kéo dài hàng chục phút;
@@ -246,7 +248,7 @@ Quy ước chạy:
 
 ## Phase 1 — Database mới (không cần code Java)
 
-### [ ] 1.1 Tạo DB (bạn tự làm)
+### [x] 1.1 Tạo DB (bạn tự làm)
 - Model: không cần (bạn làm tay).
 - Làm:
   - Trên Neon, xem **dung lượng project đang dùng**. Free khoảng 0.5GB, mà bước 1.3 sẽ nhân đôi `knowledge_chunks` (phần lớn dung lượng nằm ở `ai_db`).
@@ -259,7 +261,9 @@ Quy ước chạy:
     - `GEMINI_API_KEY`, `LLM_PROVIDER=gemini`.
 - Kiểm tra: kết nối được DB mới.
 
-### [ ] 1.2 Dựng schema cũ vào DB mới (scratch, không commit)
+### [x] 1.2 Dựng schema cũ vào DB mới (scratch, không commit)
+> **Làm khác plan:**
+> - `material_db` có **3 bảng thừa** `thread_likes`, `thread_media`, `thread_posts` (tính năng diễn đàn cũ, grep BE và FE không thấy code nào dùng). Đã bỏ bằng `--exclude-table='thread_*'`. Kết quả đúng 14 bảng.
 - Model: Haiku.
 - Làm: với từng DB cũ chạy lệnh dưới, pipe thẳng vào DB mới:
   `pg_dump "<old>" --schema-only --no-owner --no-privileges --exclude-table=flyway_schema_history --exclude-table=knowledge_chunks_backup_word_window | psql "<new>"`
@@ -268,7 +272,12 @@ Quy ước chạy:
 - Kiểm tra: `\dt public.*` ra đủ 14 bảng ở bảng phân schema.
   - Nếu có **thêm bảng nào khác** (ví dụ bảng sót lại của `question_service` hay `result-service` cũ, từng được `ddl-auto` tạo ra) thì liệt kê và **dừng hỏi** trước khi đi tiếp. Bảng nào còn ở đây sẽ đi thẳng vào V1 baseline.
 
-### [ ] 1.3 Copy dữ liệu nội dung
+### [x] 1.3 Copy dữ liệu nội dung
+> **Làm khác plan:** copy thêm các bảng người dùng (xem mục "Quyết định đã chốt"):
+> - user_db: `users`; auth_db: `credentials`; exam_db: `exam_attempts`, `attempt_answers`, `exam_ratings`, `user_topic_mastery`.
+> - Số dòng khớp DB cũ: categories 4, topics 50, exams 5, questions 315, topic_edges 64, learning_materials 119, knowledge_chunks 5543, users 53, credentials 61, exam_attempts 179, attempt_answers 12325, exam_ratings 38, user_topic_mastery 271.
+> - Sequence khớp `max(id)`: users 77, credentials 78, learning_materials 1256, knowledge_chunks 5544. Các bảng exam dùng id kiểu `varchar` nên không có sequence.
+> - **Dữ liệu mồ côi:** vì không có khóa ngoại xuyên DB, một số user đã bị xóa từ trước nên có bản ghi trỏ vào user không tồn tại. Đã dọn bằng tay: xóa 33 `exam_attempts` (kèm 2380 `attempt_answers`), 12 `exam_ratings`, 41 `user_topic_mastery`, 11 `credentials`. Sau dọn: `exam_attempts` còn 146 dòng, mọi loại mồ côi bằng 0.
 - Model: Sonnet.
 - Làm: chạy `pg_dump --data-only --no-owner` rồi pipe vào DB mới:
   - từ exam_db: `-t categories -t topics -t exams -t questions -t topic_edges`;
@@ -279,7 +288,10 @@ Quy ước chạy:
   - Với `learning_materials` và `knowledge_chunks`: `max(id)` ≤ `last_value` của sequence. Nếu không thì chạy `setval` thủ công.
 - Ghi số liệu count vào báo cáo của bước.
 
-### [ ] 1.4 Sinh `V1__baseline.sql` từ DB mới
+### [x] 1.4 Sinh `V1__baseline.sql` từ DB mới
+> **Làm khác plan:** ngoài các dòng plan nêu, phải xóa thêm 2 dòng `\restrict <token>` và `\unrestrict <token>` do `pg_dump` bản mới tự thêm (là lệnh riêng của psql, Flyway không hiểu). Sau Opus review còn xóa thêm:
+> - `SET transaction_timeout = 0;`: tham số chỉ có từ PG17, chạy V1 trên PG16 (Docker local, CI) sẽ lỗi. Giá trị 0 vốn là mặc định nên xóa không đổi hành vi.
+> - `COMMENT ON EXTENSION vector ...`: đòi quyền owner của extension, nếu extension do role khác tạo thì cả migration rollback. Chỉ là chú thích nên xóa không mất gì.
 - Model: Sonnet. Nhờ Opus review file SQL.
 - Làm:
   - Chạy `pg_dump "<new>" --schema-only --no-owner --no-privileges`, ghi vào `BE/app/src/main/resources/db/migration/V1__baseline.sql`.
