@@ -1,0 +1,64 @@
+{
+  "method": "GET",
+  "path": "/api/exams",
+  "status": 200,
+  "content-type": "application/json",
+  "cache-control": "no-cache, no-store, max-age=0, must-revalidate",
+  "x-frame-options": "SAMEORIGIN",
+  "location": null,
+  "set-cookie": [],
+  "body": {
+    "success": true,
+    "statusCode": 200,
+    "message": "OK",
+    "data": [
+      {
+        "id": "ap-2025-autumn-morning",
+        "title": {
+          "en": "Applied Information Technology Engineer Examination, Autumn Reiwa 7 (2025) edition - Morning Exam",
+          "ja": "令和7年度 秋期 応用情報技術者試験 午前試験",
+          "vi": "Kỳ thi Kỹ sư Công nghệ Thông tin Ứng dụng, Đợt Thu năm Reiwa 7 (năm 2025) - Đề thi buổi sáng"
+        },
+        "category": {
+          "id": "ap",
+          "name": "AP"
+        },
+        "image": "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=870&auto=format&fit=crop",
+        "duration": 150,
+        "questionCount": 80,
+        "description": {
+          "en": "This is the multiple-choice morning exam for the Applied Information Technology Engineer Examination, Autumn Reiwa 7 (2025) edition. The exam consists of 80 questions distributed as follows: Technology field (questions 1-50), Management field (questions 51-60), and Strategy field (questions 61-80).",
+          "ja": "令和7年度 秋期 応用情報技術者試験の午前試験（多肢選択式）です。全80問で構成されており、分野別の内訳は次のとおりです。テクノロジ系（問1〜50）、マネジメント系（問51〜60）、ストラテジ系（問61〜80）。",
+          "vi": "Đây là đề thi trắc nghiệm buổi sáng của Kỳ thi Kỹ sư Công nghệ Thông tin Ứng dụng, đợt Thu năm Reiwa 7 (năm 2025). Đề thi bao gồm 80 câu hỏi với phân bổ như sau: Lĩnh vực Công nghệ (câu 1-50), Lĩnh vực Quản lý (câu 51-60) và Lĩnh vực Chiến lược (câu 61-80)."
+        },
+        "participants": 80,
+        "rating": 4.2,
+        "ratingCount": 10
+      },
+      {
+        "id": "fe-2025-a",
+        "title": {
+          "en": "FE Exam 2025 - Fundamental Information Technology Engineer Subject A (Public Release)",
+          "ja": "2025年(令和7年度) FE 基本情報技術者試験 科目A試験（公開問題）",
+          "vi": "Đề thi FE 2025 - Kỹ sư Công nghệ Thông tin Cơ bản Môn A (Bản công bố)"
+        },
+        "category": {
+          "id": "fe",
+          "name": "FE"
+        },
+        "image": "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?q=80&w=870&auto=format&fit=crop",
+        "duration": 30,
+        "questionCount": 20,
+        "description": {
+          "en": "Official 2025 FE Exam (Fundamental Information Technology Engineer) practice questions for Subject A. This public version contains 20 selected questions from the actual 60-question CBT exam. Please note that this practice set is designed for 30 minutes, whereas the actual official exam duration is 90 minutes. Covers core IT topics, management, and strategy for FE certification success.",
+          "ja": "2025年度（令和7年度）のFE（基本情報技術者試験）科目Aの公式公開問題です。実際のCBT試験は全60問で試験時間が90分ですが、本公開版では厳選された20問を収録し、制限時間を30分としています。テクノロジ・マネジメント・ストラテジの各分野を網羅し、FE合格に向けた試験対策に最適です。",
+          "vi": "Luyện tập với đề thi FE 2025 (Kỹ sư Công nghệ Thông tin Cơ bản) Môn A. Phiên bản công khai này bao gồm 20 câu hỏi trọng tâm được trích từ đề thi CBT 60 câu chính thức của IPA. Lưu ý: Thời gian làm bài cho bộ đề rút gọn này là 30 phút, trong khi thời gian của đề thi thực tế lên tới 90 phút. Đề thi bao trùm các kiến thức then chốt giúp bạn ôn luyện và đạt chứng chỉ FE hiệu quả."
+        },
+        "participants": 45,
+        "rating": 4.22,
+        "ratingCount": 9
+      }
+    ],
+    "path": "/api/exams"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "method": "HEAD",
+  "path": "/api/materials/1129/file",
+  "status": 200,
+  "content-type": "application/pdf",
+  "cache-control": "public, max-age=86400",
+  "x-frame-options": "SAMEORIGIN",
+  "location": null,
+  "set-cookie": [],
+  "body": null
+}

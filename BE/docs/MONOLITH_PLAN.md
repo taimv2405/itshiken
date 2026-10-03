@@ -177,7 +177,11 @@ Quy ước chạy:
 ### [x] 0.1 Tạo nhánh và đưa plan vào repo
 > Kết quả baseline (2026-10-03): mọi module build pass, **trừ `material_service`**. Module này lỗi `cannot find symbol getXxx()/log` vì Lombok không chạy trên JDK 25 khi pom thiếu `annotationProcessorPaths`. Bước 3.1 sẽ thêm cấu hình này. `api_gateway` không nằm trong reactor.
 
-### [ ] 0.2 Chạy stack microservice cũ ở local
+### [x] 0.2 Chạy stack microservice cũ ở local
+> **Làm khác plan:** không chạy bằng docker compose, mà chạy 7 service bằng run configuration của IntelliJ.
+> - Env khai báo trong run config, vì `spring-dotenv` không thấy `BE/.env` (chi tiết ở `baseline/README.md`).
+> - Biến nào không khai báo thì lấy mặc định trong yaml, nên khác compose ở 2 chỗ: gateway và auth chạy profile `dev` thay cho `prod`, và `COOKIE_SECURE` là `false`.
+> - `BE/docker-compose.yml` không bị sửa.
 - Model: Sonnet.
 - Mục đích: xác nhận hiện trạng trước khi refactor. Lỗi nào có sẵn từ trước thì không bị đổ cho refactor. Cũng kiểm tra luôn 5 DB cũ còn kết nối được, vì Phase 1 phải dump từ chúng.
 - **Quy tắc: không sửa code Java cũ** (code này sắp bị xoá).
@@ -196,7 +200,10 @@ Quy ước chạy:
   - Báo cáo service nào chạy, service nào lỗi, kèm lý do.
 - Commit: không có (`.env` đã gitignore).
 
-### [ ] 0.3 Chụp baseline response của stack cũ
+### [x] 0.3 Chụp baseline response của stack cũ
+> **Làm khác plan:** stack cũ chạy bằng IntelliJ (xem 0.2), nên:
+> - cookie trong baseline không có `Secure` và có `SameSite=Lax`. Monolith ở local cũng mặc định `COOKIE_SECURE=false`, nên cookie phải **giống hệt**, không còn là khác biệt được phép;
+> - xong thì tắt các run config trong IntelliJ thay cho `docker compose down`.
 - Model: Sonnet.
 - Làm:
   - Tạo `BE/docs/baseline/capture.mjs`, chạy bằng Node có sẵn của FE (dùng `fetch` có sẵn, không cần dependency). Tham số: `--base http://localhost:8080 --out <thư mục>`.
@@ -227,14 +234,14 @@ Quy ước chạy:
       - id, email user test, số liệu attempt, rating;
       - kịch bản giả mạo `X-User-Id`: monolith không còn đọc header giả;
       - `GET /api/users/999999`: `user_service` cũ trả HTTP 200 (lỗi có sẵn), nên envelope ghi `success:true`. Monolith trả status lỗi thật và `success:false`;
-      - thuộc tính cookie `Secure`/`SameSite`: compose cũ đặt `COOKIE_SECURE=true`, còn monolith ở local mặc định `false`;
+      - ~~thuộc tính cookie `Secure`/`SameSite`~~: đã bỏ, xem ghi chú đầu bước;
       - header `cache-control` trên endpoint material: `material_service` cũ không có Spring Security, còn monolith thêm `no-store`;
       - từ Phase 9: `HEAD /api/materials/<id>/file` đổi từ 200 PDF sang 302 tới `files.itshiken.app`.
   - **Để stack cũ chạy tiếp**, chờ bạn kiểm tra FE xong.
 - Kiểm tra (bạn tự làm, khi stack cũ vẫn đang chạy):
   - Mở FE local (`npm run dev`, `BE_URL=http://localhost:8080`) và đi các luồng chính: đăng ký, đăng nhập, xem đề, làm bài, lịch sử, xem và tải PDF, AI coach.
   - Ghi những luồng **đang hỏng sẵn** vào `baseline/README.md`.
-  - Xong thì `docker compose down` (đứng ở `BE/`).
+  - Xong thì tắt stack cũ (xem ghi chú đầu bước).
 - Commit: `test: capture microservice response baseline`. File baseline không chứa token hay mật khẩu; kiểm tra lại trước khi commit.
 
 ## Phase 1 — Database mới (không cần code Java)

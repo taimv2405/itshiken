@@ -1,0 +1,26 @@
+{
+  "method": "GET",
+  "path": "/api/categories",
+  "status": 200,
+  "content-type": "application/json",
+  "cache-control": "no-cache, no-store, max-age=0, must-revalidate",
+  "x-frame-options": "SAMEORIGIN",
+  "location": null,
+  "set-cookie": [],
+  "body": {
+    "success": true,
+    "statusCode": 200,
+    "message": "OK",
+    "data": [
+      {
+        "id": "ap",
+        "name": "AP"
+      },
+      {
+        "id": "fe",
+        "name": "FE"
+      }
+    ],
+    "path": "/api/categories"
+  }
+}
