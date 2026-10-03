@@ -8,8 +8,18 @@ import { cache } from 'react';
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://itshiken.io.vn';
 
 
-const getExamsCached = cache(async () => await examService.getAllExams());
-const getCategoriesCached = cache(async () => await examService.getAllCategories());
+const getExamsCached = cache(async () =>
+    await examService.getAllExams().catch((error) => {
+        console.error('Failed to fetch exams:', error);
+        return [];
+    }),
+);
+const getCategoriesCached = cache(async () =>
+    await examService.getAllCategories().catch((error) => {
+        console.error('Failed to fetch categories:', error);
+        return [];
+    }),
+);
 
 
 export async function generateMetadata({params}: { params: Promise<{ lang: string }>}) : Promise<Metadata> {

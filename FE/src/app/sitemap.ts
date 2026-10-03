@@ -55,7 +55,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         });
     });
 
-    const exams = await examService.getAllExams();
+    const exams = await examService.getAllExams().catch((error) => {
+        console.error('Failed to fetch exams for sitemap:', error);
+        return [];
+    });
     const examIds: string[] = exams.map((exam) => exam?.id).filter(Boolean) as string[];
 
     locales.forEach((locale) => {
