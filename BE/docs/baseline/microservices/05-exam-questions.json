@@ -1,0 +1,36 @@
+{
+  "method": "GET",
+  "path": "/api/exams/ap-2025-autumn-morning/questions",
+  "status": 200,
+  "content-type": "application/json",
+  "cache-control": "no-cache, no-store, max-age=0, must-revalidate",
+  "x-frame-options": "SAMEORIGIN",
+  "location": null,
+  "set-cookie": [],
+  "body": {
+    "success": true,
+    "statusCode": 200,
+    "message": "OK",
+    "data": [
+      {
+        "id": "ap-2025-q001",
+        "text": "A, B, C, D を論理変数とするとき，次のカルノー図と等価な論理式はどれか。ここで，・は論理積，＋は論理和，$\\overline{X}$ は X の否定を表す。\n\n| AB \\\\ CD | 00 | 01 | 11 | 10 |\n| :---: | :---: | :---: | :---: | :---: |\n| **00** | 1 | 0 | 0 | 1 |\n| **01** | 0 | 1 | 1 | 0 |\n| **11** | 0 | 1 | 1 | 0 |\n| **10** | 0 | 0 | 0 | 0 |",
+        "options": [
+          "$A \\cdot B \\cdot \\overline{C} \\cdot D + \\overline{B} \\cdot \\overline{D}$",
+          "$\\overline{A} \\cdot \\overline{B} \\cdot \\overline{C} \\cdot \\overline{D} + B \\cdot D$"
+        ],
+        "questionOrder": 1
+      },
+      {
+        "id": "ap-2025-q002",
+        "text": "コンピュータによる伝票処理システムがある。このシステムは, 伝票データをためる待ち行列をもち, M/M/1 の待ち行列モデルが適用できるものとする。平均待ち時間が T 秒以上となるのは, システムの利用率が少なくとも何%以上となったときか。ここで, 伝票データをためる待ち行列の特徴は次のとおりである。\n\n・伝票データは, ポアソン分布に従って到着する。\n・伝票データをためる数に制限はない。\n・1 件の伝票データの処理時間は, 平均 T 秒の指数分布に従う。",
+        "options": [
+          "33",
+          "50"
+        ],
+        "questionOrder": 2
+      }
+    ],
+    "path": "/api/exams/ap-2025-autumn-morning/questions"
+  }
+}
