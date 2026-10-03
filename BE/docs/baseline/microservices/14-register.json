@@ -1,0 +1,19 @@
+{
+  "method": "POST",
+  "path": "/api/auth/register",
+  "status": 200,
+  "content-type": "application/json",
+  "cache-control": "no-cache, no-store, max-age=0, must-revalidate",
+  "x-frame-options": "SAMEORIGIN",
+  "location": null,
+  "set-cookie": [],
+  "body": {
+    "success": true,
+    "statusCode": 200,
+    "message": "Đăng ký thành công",
+    "data": {
+      "credentialId": 78
+    },
+    "path": "/api/auth/register"
+  }
+}

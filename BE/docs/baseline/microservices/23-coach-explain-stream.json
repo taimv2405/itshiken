@@ -1,0 +1,18 @@
+{
+  "method": "GET",
+  "path": "/api/coach/node/tp_01/explain/stream?userId=77",
+  "status": 200,
+  "content-type": "text/event-stream",
+  "cache-control": "no-cache, no-store, max-age=0, must-revalidate",
+  "x-frame-options": "SAMEORIGIN",
+  "location": null,
+  "set-cookie": [],
+  "body": [
+    "data:**Lý do",
+    "data: khó:**",
+    "data:1. Chủ đề \"Corporate Activity\" rất rộng, bao gồm",
+    "data: nhiều khía cạnh khác nhau như tài chính, quản trị, trách nhiệm xã hội, chiến lược, v.v., đòi hỏi kiến thức tổng hợp.",
+    "data:2. Các câu hỏi thường liên quan đến các khái niệm quản trị doanh",
+    "data: nghiệp chuyên sâu như CSR, Corporate Governance, M&A, Balanced Scorecard, v.v., mà người học có thể chưa quen thuộc."
+  ]
+}

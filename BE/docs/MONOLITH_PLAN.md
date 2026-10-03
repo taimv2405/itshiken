@@ -152,7 +152,7 @@ Quy ước chạy:
 ### [x] 0.1 Tạo nhánh và đưa plan vào repo
 > Kết quả baseline (2026-10-03): mọi module build pass, **trừ `material_service`**. Module này lỗi `cannot find symbol getXxx()/log` vì Lombok không chạy trên JDK 25 khi pom thiếu `annotationProcessorPaths`. Bước 3.1 sẽ thêm cấu hình này. `api_gateway` không nằm trong reactor.
 
-### [ ] 0.2 Chạy stack microservice cũ ở local
+### [x] 0.2 Chạy stack microservice cũ ở local
 - Model: Sonnet.
 - Mục đích: xác nhận hiện trạng trước khi refactor. Lỗi nào có sẵn từ trước thì không bị đổ cho refactor. Cũng kiểm tra luôn 5 DB cũ còn kết nối được, vì Phase 1 phải dump từ chúng.
 - **Quy tắc: không sửa code Java cũ** (code này sắp bị xoá).
@@ -171,7 +171,7 @@ Quy ước chạy:
   - Báo cáo service nào chạy, service nào lỗi, kèm lý do.
 - Commit: không có (`.env` đã gitignore).
 
-### [ ] 0.3 Chụp baseline response của stack cũ
+### [x] 0.3 Chụp baseline response của stack cũ
 - Model: Sonnet.
 - Làm:
   - Tạo `BE/docs/baseline/capture.mjs`, chạy bằng Node có sẵn của FE (dùng `fetch` có sẵn, không cần dependency). Tham số: `--base http://localhost:8080 --out <thư mục>`.

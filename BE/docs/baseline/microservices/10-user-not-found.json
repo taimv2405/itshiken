@@ -1,0 +1,22 @@
+{
+  "method": "GET",
+  "path": "/api/users/999999",
+  "status": 200,
+  "content-type": "application/json",
+  "cache-control": "no-cache, no-store, max-age=0, must-revalidate",
+  "x-frame-options": "SAMEORIGIN",
+  "location": null,
+  "set-cookie": [],
+  "body": {
+    "success": true,
+    "statusCode": 200,
+    "message": "Người dùng không tồn tại",
+    "data": {
+      "path": "/api/users/999999",
+      "message": "Người dùng không tồn tại",
+      "Success": false,
+      "statusCode": 500
+    },
+    "path": "/api/users/999999"
+  }
+}

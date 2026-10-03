@@ -1,0 +1,59 @@
+{
+  "method": "GET",
+  "path": "/api/exams/ap-2025-autumn-morning",
+  "status": 200,
+  "content-type": "application/json",
+  "cache-control": "no-cache, no-store, max-age=0, must-revalidate",
+  "x-frame-options": "SAMEORIGIN",
+  "location": null,
+  "set-cookie": [],
+  "body": {
+    "success": true,
+    "statusCode": 200,
+    "message": "OK",
+    "data": {
+      "id": "ap-2025-autumn-morning",
+      "title": {
+        "en": "Applied Information Technology Engineer Examination, Autumn Reiwa 7 (2025) edition - Morning Exam",
+        "ja": "令和7年度 秋期 応用情報技術者試験 午前試験",
+        "vi": "Kỳ thi Kỹ sư Công nghệ Thông tin Ứng dụng, Đợt Thu năm Reiwa 7 (năm 2025) - Đề thi buổi sáng"
+      },
+      "category": {
+        "id": "ap",
+        "name": "AP"
+      },
+      "image": "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=870&auto=format&fit=crop",
+      "duration": 150,
+      "questionCount": 80,
+      "description": {
+        "en": "This is the multiple-choice morning exam for the Applied Information Technology Engineer Examination, Autumn Reiwa 7 (2025) edition. The exam consists of 80 questions distributed as follows: Technology field (questions 1-50), Management field (questions 51-60), and Strategy field (questions 61-80).",
+        "ja": "令和7年度 秋期 応用情報技術者試験の午前試験（多肢選択式）です。全80問で構成されており、分野別の内訳は次のとおりです。テクノロジ系（問1〜50）、マネジメント系（問51〜60）、ストラテジ系（問61〜80）。",
+        "vi": "Đây là đề thi trắc nghiệm buổi sáng của Kỳ thi Kỹ sư Công nghệ Thông tin Ứng dụng, đợt Thu năm Reiwa 7 (năm 2025). Đề thi bao gồm 80 câu hỏi với phân bổ như sau: Lĩnh vực Công nghệ (câu 1-50), Lĩnh vực Quản lý (câu 51-60) và Lĩnh vực Chiến lược (câu 61-80)."
+      },
+      "participants": 80,
+      "rating": 4.2,
+      "ratingCount": 10,
+      "questions": [
+        {
+          "id": "ap-2025-q001",
+          "text": "A, B, C, D を論理変数とするとき，次のカルノー図と等価な論理式はどれか。ここで，・は論理積，＋は論理和，$\\overline{X}$ は X の否定を表す。\n\n| AB \\\\ CD | 00 | 01 | 11 | 10 |\n| :---: | :---: | :---: | :---: | :---: |\n| **00** | 1 | 0 | 0 | 1 |\n| **01** | 0 | 1 | 1 | 0 |\n| **11** | 0 | 1 | 1 | 0 |\n| **10** | 0 | 0 | 0 | 0 |",
+          "options": [
+            "$A \\cdot B \\cdot \\overline{C} \\cdot D + \\overline{B} \\cdot \\overline{D}$",
+            "$\\overline{A} \\cdot \\overline{B} \\cdot \\overline{C} \\cdot \\overline{D} + B \\cdot D$"
+          ],
+          "questionOrder": 1
+        },
+        {
+          "id": "ap-2025-q002",
+          "text": "コンピュータによる伝票処理システムがある。このシステムは, 伝票データをためる待ち行列をもち, M/M/1 の待ち行列モデルが適用できるものとする。平均待ち時間が T 秒以上となるのは, システムの利用率が少なくとも何%以上となったときか。ここで, 伝票データをためる待ち行列の特徴は次のとおりである。\n\n・伝票データは, ポアソン分布に従って到着する。\n・伝票データをためる数に制限はない。\n・1 件の伝票データの処理時間は, 平均 T 秒の指数分布に従う。",
+          "options": [
+            "33",
+            "50"
+          ],
+          "questionOrder": 2
+        }
+      ]
+    },
+    "path": "/api/exams/ap-2025-autumn-morning"
+  }
+}

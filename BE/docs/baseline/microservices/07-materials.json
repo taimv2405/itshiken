@@ -1,0 +1,65 @@
+{
+  "method": "GET",
+  "path": "/api/materials?page=0&size=5",
+  "status": 200,
+  "content-type": "application/json",
+  "cache-control": null,
+  "x-frame-options": "SAMEORIGIN",
+  "location": null,
+  "set-cookie": [],
+  "body": {
+    "success": true,
+    "statusCode": 200,
+    "message": "OK",
+    "data": {
+      "content": [
+        {
+          "category": "FE",
+          "createdAt": "2026-04-27T07:53:48.102195Z",
+          "description": "Tài liệu 2012Oct_FE_AM_Answer môn FE. Bộ đề thi và đáp án tham khảo.",
+          "fileUrl": "/Material_Data/FE/2012FeOct_000/2012Oct_FE_AM_Answer.pdf",
+          "id": 1129,
+          "imageUrl": "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=1080",
+          "title": "2012Oct_FE_AM_Answer",
+          "type": "pdf"
+        },
+        {
+          "category": "FE",
+          "createdAt": "2026-04-27T07:53:48.143137Z",
+          "description": "Tài liệu 2012Oct_FE_AM_Question môn FE. Bộ đề thi và đáp án tham khảo.",
+          "fileUrl": "/Material_Data/FE/2012FeOct_000/2012Oct_FE_AM_Question.pdf",
+          "id": 1130,
+          "imageUrl": "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=1080",
+          "title": "2012Oct_FE_AM_Question",
+          "type": "pdf"
+        }
+      ],
+      "empty": false,
+      "first": true,
+      "last": false,
+      "number": 0,
+      "numberOfElements": 5,
+      "pageable": {
+        "offset": 0,
+        "pageNumber": 0,
+        "pageSize": 5,
+        "paged": true,
+        "sort": {
+          "empty": true,
+          "sorted": false,
+          "unsorted": true
+        },
+        "unpaged": false
+      },
+      "size": 5,
+      "sort": {
+        "empty": true,
+        "sorted": false,
+        "unsorted": true
+      },
+      "totalElements": 119,
+      "totalPages": 24
+    },
+    "path": "/api/materials"
+  }
+}
