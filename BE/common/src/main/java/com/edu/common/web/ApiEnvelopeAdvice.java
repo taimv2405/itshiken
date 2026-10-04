@@ -44,7 +44,8 @@ public class ApiEnvelopeAdvice implements ResponseBodyAdvice<Object> {
     public Object beforeBodyWrite(Object body, MethodParameter returnType, MediaType selectedContentType,
                                   Class<? extends HttpMessageConverter<?>> selectedConverterType,
                                   ServerHttpRequest request, ServerHttpResponse response) {
-        if (selectedContentType == null || !selectedContentType.isCompatibleWith(MediaType.APPLICATION_JSON)) {
+        // Gateway only wrapped responses that actually had a JSON body; Void/empty ones passed through.
+        if (body == null || selectedContentType == null || !selectedContentType.isCompatibleWith(MediaType.APPLICATION_JSON)) {
             return body;
         }
         if (!(request instanceof ServletServerHttpRequest servletRequest)
@@ -67,21 +68,27 @@ public class ApiEnvelopeAdvice implements ResponseBodyAdvice<Object> {
         Object startAttr = httpRequest.getAttribute(RequestTimingFilter.START_TIME_ATTR);
         long elapsed = startAttr instanceof Long start ? System.currentTimeMillis() - start : 0;
 
-        JsonNode original = body == null ? objectMapper.createObjectNode() : objectMapper.valueToTree(body);
+        JsonNode original = objectMapper.valueToTree(body);
+        String message = messageOf(original, success ? "OK" : "Đã có lỗi xảy ra");
 
         ObjectNode wrapped = objectMapper.createObjectNode();
         wrapped.put("success", success);
         wrapped.put("statusCode", status);
+        wrapped.put("message", message);
         if (success) {
-            wrapped.put("message", original.path("message").asString("OK"));
             wrapped.set("data", original.has("data") ? original.get("data") : original);
         } else {
-            wrapped.put("message", original.path("message").asString("Đã có lỗi xảy ra"));
             wrapped.putNull("data");
         }
         wrapped.put("path", path);
         wrapped.put("timestamp", Instant.now().toString());
         wrapped.put("responseTime", elapsed + " ms");
         return wrapped;
+    }
+
+    /** Jackson 2's asText(default) fell back for null nodes; Jackson 3's asString(default) returns "". */
+    private static String messageOf(JsonNode original, String fallback) {
+        JsonNode m = original.path("message");
+        return m.isMissingNode() || m.isNull() ? fallback : m.asString(fallback);
     }
 }
