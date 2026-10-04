@@ -16,6 +16,11 @@
 	<dependencies>
 		<dependency>
 			<groupId>com.edu</groupId>
+			<artifactId>common</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.edu</groupId>
 			<artifactId>material</artifactId>
 			<version>${project.version}</version>
 		</dependency>
