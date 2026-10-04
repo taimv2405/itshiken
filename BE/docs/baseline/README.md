@@ -24,9 +24,7 @@ Mỗi file là một kịch bản: `method`, `path`, `status`, header (`content-
 ## Khác biệt được phép khi so với monolith
 
 - id, email user test, số liệu attempt, rating.
-- `spoof-x-user-id`: monolith không còn đọc header giả.
-- `user-not-found` (`GET /api/users/999999`): monolith trả status lỗi thật và `success:false`.
-- Header `cache-control` trên endpoint material: `material_service` cũ không có Spring Security, monolith thêm `no-store`.
+- Các khác biệt bắt buộc khác (timeout gateway, 404, `/api/ai/admin/**`, `/api/ai-coach/**`, đăng ký trùng tên, pool kết nối): xem bảng "Khác biệt bắt buộc" trong `MONOLITH_PLAN.md`.
 - Từ Phase 9: `HEAD /api/materials/<id>/file` đổi từ 200 PDF sang 302 tới `files.itshiken.app`.
 
 ## Lưu ý khi chạy stack cũ bằng IntelliJ
