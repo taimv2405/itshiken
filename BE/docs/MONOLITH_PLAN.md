@@ -121,6 +121,8 @@ Mỗi bước có:
 
 Hết mỗi bước là **DỪNG**, để bạn kiểm tra rồi mới sang bước sau.
 
+Khi buộc phải làm khác plan, ghi vào đầu bước đó (dạng `> **Làm khác plan:** ...`) và **chỉ ghi 2 thứ**: làm khác cái gì, và tại sao (gặp vấn đề gì). Không ghi trạng thái tạm thời (port đang bận, tiến trình đang chạy), việc chưa làm mà plan không yêu cầu, hay kết quả kiểm tra.
+
 Quy ước chạy:
 - **Máy này không có `mvn`/`java` trên PATH.** Chạy Maven bằng wrapper (PowerShell, đứng ở `BE/`):
   `$env:PATH = "$env:JAVA_HOME\bin;$env:PATH"; .\exam-service\mvnw.cmd -f pom.xml <goals>`.
