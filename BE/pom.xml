@@ -20,7 +20,6 @@
     <modules>
         <module>common</module>
         <module>app</module>
-        <module>auth_service</module>
         <module>identity</module>
         <module>discovery_server</module>
         <module>exam-service</module>

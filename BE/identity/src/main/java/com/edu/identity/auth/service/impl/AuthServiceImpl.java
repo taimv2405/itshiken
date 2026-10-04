@@ -31,7 +31,7 @@ public class AuthServiceImpl implements AuthService {
 
     private final CredentialRepository credentialRepository;
     private final RefreshTokenRepository refreshTokenRepository;
-    private final UserServiceClient userServiceClient;
+    private final UserService userService;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
 
@@ -44,13 +44,14 @@ public class AuthServiceImpl implements AuthService {
             throw new DuplicateEmailException("Email đã được sử dụng");
         }
 
-        UserResponse userResponse = userServiceClient.createUser(
-                new CreateUserRequest(request.getName(), request.getPhoneNumber(), request.getStatus(), request.getEmail())
-        );
+        CreateUserRequest createUserRequest = new CreateUserRequest();
+        createUserRequest.setName(request.getName());
+        createUserRequest.setPhoneNumber(request.getPhoneNumber());
+        createUserRequest.setCurrent(request.getStatus());
+        createUserRequest.setEmail(request.getEmail());
+        User user = userService.createUser(createUserRequest);
 
-        if (!userResponse.isSuccess()) throw new RuntimeException(userResponse.getMessage());
-
-        Long userId = userResponse.getData().getId();
+        Long userId = user.getId();
 
         Credential credential = credentialRepository.save(
                 Credential.builder()

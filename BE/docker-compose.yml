@@ -17,28 +17,6 @@ services:
       timeout: 10s
       retries: 5
 
-  # 3. Auth Service
-  auth_service:
-    build:
-      context: .
-      dockerfile: auth_service/Dockerfile
-    container_name: auth-service
-    ports:
-      - "8081:8081"
-    depends_on:
-      discovery_server:
-        condition: service_healthy
-    networks:
-      - be-network
-    environment:
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
-      - SPRING_PROFILES_ACTIVE=prod
-      - JWT_SECRET=${JWT_SECRET}
-      - COOKIE_SECURE=true
-      - DB_URL=${AUTH_DB_URL}
-      - DB_USERNAME=${DB_USERNAME}
-      - DB_PASSWORD=${DB_PASSWORD}
-
   # 5. Exam Service
   exam-service:
     build:
