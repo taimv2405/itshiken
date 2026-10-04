@@ -359,7 +359,7 @@ Quy ước chạy:
   - `/api/materials/<id>/file` vẫn trả PDF nhị phân, không bị bọc.
 - Commit: `feat(common): add api response envelope and request logging`.
 
-### [ ] 4.2 Security: JWT filter, protected path, CORS, header
+### [x] 4.2 Security: JWT filter, protected path, CORS, header
 - Model: Sonnet. Nhờ Opus review.
 - Làm:
   - `common`: thêm `spring-boot-starter-security`, `jjwt-api` và `jjwt-impl`/`jjwt-jackson` (runtime).
