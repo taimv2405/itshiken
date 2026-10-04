@@ -60,7 +60,7 @@ jwt:
   expiration: 900000
 
 cors:
-  allowed-origins: ${ALLOWED_ORIGINS:}
+  allowed-origins: ${ALLOWED_ORIGINS:http://localhost:3000,http://localhost:3001}
 
 app:
   admin:
