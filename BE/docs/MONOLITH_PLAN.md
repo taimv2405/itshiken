@@ -1,4 +1,4 @@
-# Kế hoạch: gom backend microservice → modular monolith (deploy free)
+﻿# Kế hoạch: gom backend microservice → modular monolith (deploy free)
 
 ## Context
 
@@ -410,7 +410,7 @@ Quy ước chạy:
   - `POST /api/ai/admin/ingest` trả 403.
 - Commit: `feat(security): replace gateway auth with in-app jwt filter`.
 
-### [ ] 4.3 Gỡ các thay đổi hành vi đã làm ở 4.1 và 4.2
+### [x] 4.3 Gỡ các thay đổi hành vi đã làm ở 4.1 và 4.2
 - Model: Sonnet. Nhờ Opus review.
 - Bối cảnh: theo nguyên tắc "giữ nguyên hành vi 100%" (phần Context), 4 chỗ trong code hiện tại đang làm khác gateway cũ. Bước này trả chúng về đúng như cũ. Muốn sửa lỗi thì để tới Phase F (nhánh `fix/*`) và ghi vào mục "Việc để sau".
 - Làm:
