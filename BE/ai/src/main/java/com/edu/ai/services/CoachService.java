@@ -1,7 +1,7 @@
 package com.edu.ai.services;
 
-import com.edu.ai.clients.ExamServiceClient;
 import com.edu.ai.dtos.*;
+import com.edu.exam.services.AICoachService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
