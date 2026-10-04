@@ -16,7 +16,10 @@ import org.springframework.security.config.annotation.web.configurers.HeadersCon
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.header.HeaderWriter;
+import org.springframework.security.web.header.writers.CacheControlHeadersWriter;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
+import org.springframework.security.web.header.writers.XXssProtectionHeaderWriter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -64,7 +67,14 @@ public class SecurityConfig {
                                                    @Value("${app.admin.ingest-enabled:false}") boolean ingestEnabled)
             throws Exception {
         applyCommon(http, jwtService, objectMapper);
-        http.headers(this::gatewayHeaders);
+        http.headers(headers -> {
+            gatewayHeaders(headers);
+            // The old gateway wrote its 401 itself, so that response never had these headers.
+            headers.cacheControl(cache -> cache.disable());
+            headers.xssProtection(xss -> xss.disable());
+            headers.addHeaderWriter(skipOn401(new CacheControlHeadersWriter()));
+            headers.addHeaderWriter(skipOn401(new XXssProtectionHeaderWriter()));
+        });
         http.authorizeHttpRequests(auth -> {
             auth.requestMatchers(HttpMethod.GET, "/api/users/me").authenticated();
             auth.requestMatchers(HttpMethod.POST, "/api/exams").authenticated();
@@ -79,6 +89,14 @@ public class SecurityConfig {
             auth.anyRequest().permitAll();
         });
         return http.build();
+    }
+
+    private static HeaderWriter skipOn401(HeaderWriter delegate) {
+        return (request, response) -> {
+            if (response.getStatus() != HttpServletResponse.SC_UNAUTHORIZED) {
+                delegate.writeHeaders(request, response);
+            }
+        };
     }
 
     private void gatewayHeaders(HeadersConfigurer<HttpSecurity> headers) {
