@@ -1,6 +1,6 @@
-package com.testwebsite.backend.material.dto;
+package com.edu.material.dto;
 
-import com.testwebsite.backend.material.entity.LearningMaterial;
+import com.edu.material.entity.LearningMaterial;
 import lombok.Builder;
 import lombok.Data;
 
