@@ -16,26 +16,34 @@ public class CoachService {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-    private final ExamServiceClient examServiceClient;
+    private final AICoachService aiCoachService;
+    private final tools.jackson.databind.ObjectMapper objectMapper;
     private final LLMService llmService;
     private final RagService ragService;
 
-    public CoachService(ExamServiceClient examServiceClient, LLMService llmService, RagService ragService) {
-        this.examServiceClient = examServiceClient;
+    public CoachService(AICoachService aiCoachService, tools.jackson.databind.ObjectMapper objectMapper,
+                        LLMService llmService, RagService ragService) {
+        this.aiCoachService = aiCoachService;
+        this.objectMapper = objectMapper;
         this.llmService = llmService;
         this.ragService = ragService;
     }
 
+    // Exam's DTO -> JSON -> ai's DTO, same round trip Feign used to do over HTTP.
+    private AICoachAnalysisDTO fetchAnalysis(String userId) {
+        return objectMapper.convertValue(aiCoachService.analyzeUserKnowledge(userId), AICoachAnalysisDTO.class);
+    }
+
     public AICoachAnalysisDTO analyzeUserKnowledge(String userId) {
         log.info("Fetching analysis for userId: {}", userId);
-        AICoachAnalysisDTO analysis = examServiceClient.getAnalysis(userId);
+        AICoachAnalysisDTO analysis = fetchAnalysis(userId);
         log.info("Analysis fetched: {} nodes, {} edges", analysis.getNodes().size(), analysis.getEdges().size());
         return analysis;
     }
 
     public LearningPathResponse generateLearningPath(String userId, LearningPathRequest request) {
         log.info("Generating learning path for userId: {}", userId);
-        AICoachAnalysisDTO analysis = examServiceClient.getAnalysis(userId);
+        AICoachAnalysisDTO analysis = fetchAnalysis(userId);
 
         Map<String, NodeDTO> nodeMap = analysis.getNodes().stream()
             .collect(Collectors.toMap(NodeDTO::getId, n -> n));
@@ -90,7 +98,7 @@ public class CoachService {
 
     public NodeExplanationResponse explainTopic(String userId, String topicId) {
         log.info("Explaining topic {} for userId: {}", topicId, userId);
-        AICoachAnalysisDTO analysis = examServiceClient.getAnalysis(userId);
+        AICoachAnalysisDTO analysis = fetchAnalysis(userId);
 
         Map<String, NodeDTO> nodeMap = analysis.getNodes().stream()
             .collect(Collectors.toMap(NodeDTO::getId, n -> n));
@@ -124,7 +132,7 @@ public class CoachService {
 
     public void streamExplainTopic(String userId, String topicId, SseEmitter emitter) {
         log.info("Streaming explain for topic {} userId: {}", topicId, userId);
-        AICoachAnalysisDTO analysis = examServiceClient.getAnalysis(userId);
+        AICoachAnalysisDTO analysis = fetchAnalysis(userId);
 
         Map<String, NodeDTO> nodeMap = analysis.getNodes().stream()
             .collect(Collectors.toMap(NodeDTO::getId, n -> n));
@@ -150,7 +158,7 @@ public class CoachService {
     public void streamGenerateLearningPath(String userId, Integer daysRemaining, SseEmitter emitter) {
         log.info("Streaming learning path for userId: {}, days: {}", userId, daysRemaining);
         try {
-            AICoachAnalysisDTO analysis = examServiceClient.getAnalysis(userId);
+            AICoachAnalysisDTO analysis = fetchAnalysis(userId);
 
             Map<String, NodeDTO> nodeMap = analysis.getNodes().stream()
                 .collect(Collectors.toMap(NodeDTO::getId, n -> n));
