@@ -508,7 +508,8 @@ Quy ước chạy:
 
 ## Phase 6 — Exam
 
-### [ ] 6.1 exam-service → `exam`
+### [x] 6.1 exam-service → `exam`
+> **Làm khác plan:** bỏ dòng `<version>0.0.1-SNAPSHOT</version>` trong `exam/pom.xml`, để module dùng version của parent. Lý do: `app` khai báo dependency bằng `${project.version}`, giữ version riêng thì hai bên lệch nhau.
 - Model: Sonnet.
 - Làm:
   - `git mv exam-service exam`. Package `com.edu.exam` giữ nguyên.
