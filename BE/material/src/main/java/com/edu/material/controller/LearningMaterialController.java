@@ -1,7 +1,7 @@
-package com.testwebsite.backend.material.controller;
+package com.edu.material.controller;
 
-import com.testwebsite.backend.material.dto.LearningMaterialDto;
-import com.testwebsite.backend.material.service.LearningMaterialService;
+import com.edu.material.dto.LearningMaterialDto;
+import com.edu.material.service.LearningMaterialService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
