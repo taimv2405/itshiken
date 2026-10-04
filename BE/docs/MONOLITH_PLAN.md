@@ -23,8 +23,10 @@
 2. **Chia schema** (Phase 8): làm trong 1 bước riêng, bằng migration Flyway `V2`.
    - Tách riêng khỏi refactor để khi có lỗi thì biết ngay lỗi do chuyển code hay do schema.
    - Thay đổi DB đi qua Flyway thật, và DB tạo mới từ đầu cũng tự chạy V1 rồi V2.
-3. **Cloudflare R2** (Phase 9): độc lập với refactor. Chỉ bắt buộc khi deploy, vì Render không có ổ đĩa lâu dài.
-4. **Deploy** (Phase 10): production khởi động với cấu trúc cuối cùng.
+3. **Mốc tương đương** (bước 8.2): chứng minh monolith cho ra kết quả giống stack cũ. **Trước mốc này không sửa lỗi nào.**
+4. **Sửa lỗi bắt buộc trước deploy** (bước 8.3), mỗi lỗi một bước, có kiểm tra riêng.
+5. **Cloudflare R2** (Phase 9, sau mốc tương đương): độc lập với refactor. Chỉ bắt buộc khi deploy, vì Render không có ổ đĩa lâu dài. Đây là thay đổi hành vi có chủ đích (file trả 302 thay cho 200).
+6. **Deploy** (Phase 10): production khởi động với cấu trúc cuối cùng. Các lỗi còn lại trong "Việc để sau" sửa dần sau khi production ổn định.
 
 ### Quyết định đã chốt
 - **Modular monolith**: các module `common`, `identity` (auth + user gộp lại), `exam`, `material`, `ai`, và `app` (module duy nhất có main class).
@@ -54,6 +56,8 @@
 
 ### Hành vi của gateway mà monolith phải tự làm (nguồn: `api_gateway/src/main/...`)
 - **JWT**: đọc cookie `access_token` rồi gắn header `X-User-Id` xuống controller. Token sai hoặc thiếu thì đi tiếp như ẩn danh, **trừ** các protected path thì trả 401.
+  - Gateway **bỏ qua** request `OPTIONS` và các path `/api/auth/**`, `/actuator/**` (không xử lý JWT gì cả).
+  - Token hợp lệ: gán đè `X-User-Id`. Token sai hoặc thiếu: **giữ nguyên** `X-User-Id` client tự gửi (lỗ hổng có sẵn, giữ nguyên cho tới bước 8.3).
   - Protected path: `GET /api/users/me`, `POST /api/exams`, `PUT|DELETE /api/exams/**`, `POST /api/exams/*/submit`, `POST /api/exams/*/rating`, `GET /api/attempts/me/**`, `POST /api/materials`, `PUT|DELETE /api/materials/**`.
   - Body 401: message `"Bạn chưa đăng nhập hoặc phiên đăng nhập đã hết hạn"`.
 - **Envelope** (`ResponseWrapperFilter.java`): chỉ bọc khi content-type là JSON; bỏ qua `/actuator`.
@@ -62,13 +66,28 @@
   - Khi lỗi: `message = body.message ?: "Đã có lỗi xảy ra"`, `data = null`.
   - Luôn có thêm `path`, `timestamp` (ISO Instant), `responseTime` (`"N ms"`).
 - **CORS**: origin lấy từ `cors.allowed-origins`, `allowCredentials(true)`. Thực tế trình duyệt chỉ gọi domain Vercel rồi Vercel proxy sang Render, nên CORS gần như không dùng tới, nhưng vẫn giữ để chạy local.
-- **Header**: `nosniff`, `X-Frame-Options SAMEORIGIN`, `Referrer-Policy strict-origin-when-cross-origin`, `Permissions-Policy geolocation=(), microphone=(), camera=()`.
+  - Gateway chọn origin theo profile: `dev` chỉ có `http://localhost:3000` và `:3001`; `prod` chỉ có `ALLOWED_ORIGINS`.
+- **Header**: gateway gán đè (`set`) 4 header `nosniff`, `X-Frame-Options SAMEORIGIN`, `Referrer-Policy strict-origin-when-cross-origin`, `Permissions-Policy geolocation=(), microphone=(), camera=()` lên mọi response.
+  - Ngoài 4 header đó, response của auth, user, exam và ai còn có các header mặc định của Spring Security riêng từng service: `Cache-Control: no-cache, no-store, ...`, `Pragma`, `Expires`, `X-XSS-Protection`.
+  - **material không có Spring Security**, nên response của material **không có** các header mặc định đó.
+- **`X-Request-Id`**: gateway chỉ gắn vào request gửi xuống service để ghi log, **không** gắn vào response trả cho client.
 - Bỏ hẳn, không làm lại: Eureka, load balancer, circuit breaker, retry, warmup scheduler.
 
-### Lỗ hổng sửa luôn trong lúc gom
-- Gateway không xoá header `X-User-Id` do client tự gửi, nên có thể giả mạo user. Filter mới **luôn xoá** header của client, chỉ gắn lại từ JWT.
-- Xoá `/api/ai-coach` (ai sẽ gọi thẳng service Java).
-- Chặn `/api/ai/admin/**` (`denyAll`), trừ khi bật `app.admin.ingest-enabled=true`. Chỉ bật khi chạy local.
+### Nguyên tắc: refactor phải giữ nguyên hành vi 100%
+- Từ Phase 1 tới hết Phase 8, mọi request phải cho ra **cùng status, cùng body, cùng header** như stack cũ. Kể cả các lỗi có sẵn: phải giữ nguyên lỗi.
+- Thấy chỗ nào muốn sửa cho đúng: **chỉ ghi vào mục "Việc để sau"** ở cuối plan (ghi file, hiện tượng, cách sửa đề xuất). **Không sửa ngay.**
+- Chỉ bắt đầu sửa sau **mốc tương đương** (bước 8.2), tức là khi đã chứng minh hai bản cho ra kết quả giống nhau. Mỗi lần sửa một việc, có kiểm tra riêng. Như vậy hỏng ở đâu thì biết ngay là do việc sửa đó, không lẫn với refactor.
+- Chỉ những khác biệt trong danh sách dưới đây là được phép, vì không thể giữ khi bỏ gateway hoặc gộp process. Gặp khác biệt nào ngoài danh sách thì **dừng và báo**.
+
+### Khác biệt bắt buộc (không tránh được, đã chấp nhận)
+| Khác biệt | Lý do không giữ được |
+|---|---|
+| Không còn timeout, retry, circuit breaker của gateway. Cũ: request chậm quá 30s có thể bị cắt thành 503 "Dịch vụ tạm thời không khả dụng", GET lỗi 503 được thử lại 2 lần. Mới: request chạy tới khi xong | Gateway bị bỏ. Cố tình dựng lại các lỗi timeout thì vô nghĩa |
+| Path không có route. Cũ: gateway trả 404 dạng JSON của WebFlux, không bọc envelope. Mới: 404 qua `/error` của Spring, có bọc envelope | Không còn router của gateway |
+| `/api/ai/admin/**`. Cũ: không có route nên 404. Mới: 403 (`denyAll`) khi `INGEST_ENABLED=false` | Ingest phải chặn được từ ngoài nhưng vẫn mở được ở local |
+| `/api/ai-coach/**`. Cũ: chỉ gọi nội bộ, ngoài vào là 404. Mới: xoá controller ở 7.1, ngoài vào vẫn 404 (dạng `/error`) | ai gọi thẳng service Java, không còn qua HTTP |
+| Đăng ký với tên đã tồn tại. Cũ: 500, message là lỗi `DecodeException` của Feign. Mới: 500, message `"Người dùng đã tồn tại"` | Không còn Feign. Status vẫn giữ là 500 |
+| Một pool kết nối chung (5) thay cho mỗi service một pool; Tomcat tối đa 40 thread | Gói free của Render (512MB) và Neon (100 CU-giờ). Không đổi kết quả của request, chỉ ảnh hưởng khi rất nhiều người dùng cùng lúc |
 
 ---
 
@@ -340,6 +359,7 @@ Quy ước chạy:
 ## Phase 4 — Hạ tầng chung thay cho gateway
 
 ### [x] 4.1 Module `common` và envelope response
+> **Sửa lại ở 4.3:** `RequestTimingFilter` không được gắn `X-Request-Id` vào response (gateway cũ không làm vậy).
 - Model: Sonnet. Đây là hợp đồng với FE, nên nhờ Opus review.
 - Làm:
   - Tạo module `common` (package `com.edu.common`, packaging jar). Dependency: `spring-boot-starter-webmvc`, lombok.
@@ -360,6 +380,7 @@ Quy ước chạy:
 - Commit: `feat(common): add api response envelope and request logging`.
 
 ### [x] 4.2 Security: JWT filter, protected path, CORS, header
+> **Sửa lại ở 4.3:** không xoá `X-User-Id` của client (việc đó dời sang 8.3), header của material phải giống `material_service` cũ, CORS chọn origin như profile của gateway.
 - Model: Sonnet. Nhờ Opus review.
 - Làm:
   - `common`: thêm `spring-boot-starter-security`, `jjwt-api` và `jjwt-impl`/`jjwt-jackson` (runtime).
@@ -385,6 +406,31 @@ Quy ước chạy:
   - `POST /api/ai/admin/ingest` trả 403.
 - Commit: `feat(security): replace gateway auth with in-app jwt filter`.
 
+### [ ] 4.3 Gỡ các thay đổi hành vi đã làm ở 4.1 và 4.2
+- Model: Sonnet. Nhờ Opus review.
+- Bối cảnh: theo nguyên tắc "giữ nguyên hành vi 100%" (phần Context), 4 chỗ trong code hiện tại đang làm khác gateway cũ. Bước này trả chúng về đúng như cũ. Muốn sửa lỗi thì để tới bước 8.3 hoặc mục "Việc để sau".
+- Làm:
+  1. **`common/.../security/JwtAuthFilter.java`**: làm đúng như `api_gateway/.../filter/JwtAuthGatewayFilter.java`:
+     - request `OPTIONS` và path khớp `/api/auth/**` hoặc `/actuator/**`: đi tiếp **nguyên trạng**, không đọc cookie, không đụng header;
+     - token hợp lệ: gán đè `X-User-Id = sub` (wrapper hiện tại) và set `SecurityContext`;
+     - token sai hoặc thiếu: `chain.doFilter(request, response)` với **request gốc**, không bọc wrapper, để `X-User-Id` client gửi vẫn còn.
+     - Sửa javadoc của class cho khớp. Ghi lỗ hổng vào mục "Việc để sau" (đã có sẵn, xem cuối plan).
+  2. **`common/.../web/RequestTimingFilter.java`**: **không** gắn `X-Request-Id` vào response. Nếu cần id thì chỉ đưa vào dòng log.
+  3. **`app/.../config/SecurityConfig.java`, header của material**: tách thành 2 `SecurityFilterChain`:
+     - chain thứ nhất, `@Order(1)`, `securityMatcher("/api/materials/**")`: cùng CSRF, session, CORS, JWT filter và các rule `authenticated()` cho material, nhưng `headers(h -> h.defaultsDisabled()...)` rồi chỉ bật lại 4 header của gateway (`contentTypeOptions`, `frameOptions.sameOrigin`, `referrerPolicy`, `permissionsPolicy`). Như vậy response material không có `Cache-Control`, `Pragma`, `Expires`, `X-XSS-Protection`, đúng như `material_service` cũ;
+     - chain thứ hai: phần còn lại, giữ như hiện tại (Spring Security mặc định + 4 header gateway), đúng như auth, user, exam, ai cũ.
+     - Đưa phần cấu hình chung (CSRF, session, CORS, JWT filter, entry point 401) vào một hàm dùng chung để 2 chain không lệch nhau.
+  4. **CORS**: bỏ `localhost` cứng trong code. Origin chỉ lấy từ `cors.allowed-origins`, và app yaml đặt `cors.allowed-origins: ${ALLOWED_ORIGINS:http://localhost:3000,http://localhost:3001}`. Không có env thì giống profile `dev` của gateway, có env thì giống profile `prod`.
+  5. **`BE/docs/baseline/README.md`**:
+     - bỏ 3 mục khỏi "Khác biệt được phép": `spoof-x-user-id`, `user-not-found`, `cache-control` của material. Giờ 3 kịch bản này phải **giống hệt** baseline;
+     - thêm dòng trỏ về bảng "Khác biệt bắt buộc" trong plan.
+- Kiểm tra:
+  - Chạy capture, so với baseline các kịch bản material: phải **giống hệt**, kể cả header `cache-control` (không có).
+  - `curl -I` một endpoint material: không có `X-Request-Id`, `Pragma`, `Expires`, `X-XSS-Protection`; có đủ 4 header của gateway.
+  - Các kiểm tra của 4.2 vẫn pass: 401 envelope, 403 ingest, `X-Frame-Options: SAMEORIGIN`.
+  - Kịch bản `spoof-x-user-id` sẽ được so ở bước 6.1, khi exam đã chuyển sang.
+- Commit: `fix(common): restore gateway-identical behavior for jwt, headers and cors`.
+
 ## Phase 5 — Identity (auth + user)
 
 ### [ ] 5.1 user_service → `identity` (phần user)
@@ -392,14 +438,20 @@ Quy ước chạy:
 - Làm:
   - `git mv user_service identity`.
   - Dời package `com.edu.user_service` → `com.edu.identity.user`.
-  - Xoá: `UserServiceApplication`, `config/SecurityConfig`, `config/WebConfig`, `interceptor/*` (envelope của common đã thay), `application.yaml`.
-  - Đổi tên `exception/GlobalExceptionHandler` → `UserExceptionHandler` với `@RestControllerAdvice(basePackages="com.edu.identity.user")`. Handler phải trả `ResponseEntity` với **status thật**: 400 cho validation, 500 cho `Exception`. Hiện handler luôn trả 200, mà như vậy thì envelope sẽ ghi `success:true`.
+  - Xoá: `UserServiceApplication`, `config/SecurityConfig`, `application.yaml`.
+  - **Giữ nguyên** lớp bọc response riêng của user để hành vi không đổi. Cũ: `user_service` bọc response một lần (`GlobalResponseInterceptor`), rồi gateway bọc thêm lần nữa. Mới: đúng 2 lớp đó, theo đúng thứ tự.
+    - `interceptor/GlobalResponseInterceptor`: giữ code, chỉ thêm `@RestControllerAdvice(basePackages = "com.edu.identity.user")` để nó không bọc response của module khác, và `@Order(Ordered.HIGHEST_PRECEDENCE)` để nó chạy **trước** `ApiEnvelopeAdvice`.
+    - `ApiEnvelopeAdvice` (common): thêm `@Order(Ordered.LOWEST_PRECEDENCE)`, để nó luôn là lớp ngoài cùng, giống gateway.
+    - `config/WebConfig` + `interceptor/RequestTimeInterceptor`: giữ, nhưng chỉ đăng ký cho `/api/users/**`. Attribute `startTime` của nó không trùng tên với `REQUEST_START_TIME` của common.
+  - Đổi tên `exception/GlobalExceptionHandler` → `UserExceptionHandler` với `@RestControllerAdvice(basePackages="com.edu.identity.user")`. **Giữ nguyên thân handler**: vẫn trả `ErrorResponse` với HTTP 200. Lỗi này có sẵn ở `user_service` cũ, đã ghi trong "Việc để sau".
   - pom:
     - artifactId đổi thành `identity`;
     - bỏ eureka, `spring-boot-starter-data-jdbc`, jjwt, `spring-boot-maven-plugin`;
     - thêm dependency `common` và cấu hình compiler cho lombok.
   - Parent pom: `user_service` → `identity`. app thêm dependency `identity`.
-- Kiểm tra: `GET /api/users/999999` trả envelope `success:false` (id không tồn tại). DB mới có sẵn 53 user cũ nên `GET /api/users/<id có thật>` phải trả `success:true`.
+- Kiểm tra (so với baseline, phải **giống hệt**):
+  - `GET /api/users/999999`: HTTP 200, envelope `success:true`, `data` chứa object lỗi có `"Success": false`. Đây đúng là lỗi có sẵn của stack cũ.
+  - `GET /api/users/<id có thật>` (DB mới có sẵn 53 user cũ): `success:true`, `data` là profile.
 - Commit: `refactor(identity): move user service into identity module`.
 
 ### [ ] 5.2 Gộp auth_service vào `identity`, bỏ Feign
@@ -415,9 +467,10 @@ Quy ước chạy:
   - `auth/security/SecurityConfig` thay bằng `auth/config/PasswordConfig`, chỉ giữ bean `passwordEncoder` (`BCryptPasswordEncoder(8)`).
   - Đổi tên `GlobalExceptionHandler` → `AuthExceptionHandler` với `basePackages="com.edu.identity.auth"`.
   - `AuthServiceImpl.register`:
-    - đánh dấu `@Transactional`;
     - gọi thẳng `UserService.createUser(new com.edu.identity.user.dto.CreateUserRequest(...))` và lấy `user.getId()`;
-    - bỏ `UserResponse` và `isSuccess`.
+    - bỏ `UserResponse` và `isSuccess`;
+    - **không** thêm `@Transactional`. Cũ: tạo user và lưu credential là 2 lần commit riêng ở 2 service. Mới: `UserService.createUser` và `credentialRepository.save` vẫn mỗi cái tự commit, giống hệt. Gộp transaction là sửa lỗi, đã ghi ở "Việc để sau".
+    - Validation không bị mất: cũ có `@Valid CreateUserRequest` ở controller user (tên 3–20 ký tự, email đúng định dạng). `RegisterRequest` của auth đã kiểm tra đủ các điều đó (và thêm nữa) trước khi vào service.
   - Gộp dependency từ `auth_service/pom.xml` vào `identity/pom.xml` (validation, security, data-jpa), bỏ openfeign, feign-hc5, eureka, oauth2-resource-server.
   - Đưa key `jwt.refresh-expiration`, `cookie.secure: ${COOKIE_SECURE:false}` vào app yaml.
   - Xoá module `auth_service` khỏi parent pom và xoá thư mục còn lại.
@@ -480,20 +533,27 @@ Quy ước chạy:
     - `application.yml` (đưa các nhóm key `llm`, `anthropic`, `gemini`, `rag` vào app yaml; `rag.ingest.source-path: ${RAG_SOURCE_PATH:../material/Material_Data}`). **Giữ** `src/main/resources/prompts/`, vì `PromptBuilder` đọc 2 file `.md` trong đó từ classpath;
     - `db/migration`;
     - `clients/ExamServiceClient`;
-    - `dtos/AICoachAnalysisDTO`, `dtos/NodeDTO`, `dtos/EdgeDTO` (dùng bản trong `com.edu.exam.dtos`; `CoachService` chỉ dùng getter nên đổi import là đủ).
-  - `CoachService`: inject `com.edu.exam.services.AICoachService` thay cho Feign client. Thay cả 5 chỗ `examServiceClient.getAnalysis(userId)` bằng `aiCoachService.analyzeUserKnowledge(userId)`. Trước khi sửa, kiểm tra kiểu của tham số `userId`.
+  - **Giữ** `dtos/AICoachAnalysisDTO`, `dtos/NodeDTO`, `dtos/EdgeDTO` của ai, không thay bằng bản của exam. Lý do: `NodeDTO` của ai khai báo field theo thứ tự khác bản của exam, nên JSON trả về FE sẽ đổi thứ tự key.
+  - `CoachService`: inject `com.edu.exam.services.AICoachService` và `ObjectMapper` (Jackson 3 của Boot) thay cho Feign client. Thay cả 5 chỗ `examServiceClient.getAnalysis(userId)` bằng một hàm riêng:
+    `objectMapper.convertValue(aiCoachService.analyzeUserKnowledge(userId), com.edu.ai.dtos.AICoachAnalysisDTO.class)`.
+    Cách này lặp lại đúng việc Feign làm trước đây: chuyển DTO của exam sang JSON rồi đọc lại thành DTO của ai. Trước khi sửa, kiểm tra kiểu của tham số `userId`.
+  - **`open-in-view` của ai**: ai cũ đặt `spring.jpa.open-in-view: false`, các service khác dùng mặc định `true`. Spring đặt Hibernate ở chế độ `DELAYED_ACQUISITION_AND_HOLD`. Vì vậy khi `open-in-view` bật, request giữ kết nối DB tới khi kết thúc, kể cả lúc chờ Gemini hàng chục giây. Để giữ đúng như cũ:
+    - app yaml đổi thành `spring.jpa.open-in-view: false`;
+    - trong `app` thêm một `WebMvcConfigurer` đăng ký `OpenEntityManagerInViewInterceptor` (qua `addWebRequestInterceptor`) cho mọi path, **trừ** `/api/coach/**` và `/api/ai/**`;
+    - như vậy auth, user, exam, material vẫn có open-in-view như cũ, còn ai thì không.
   - Xoá `exam/controllers/AICoachController` (không còn ai gọi qua HTTP).
   - pom:
     - artifactId `ai-service` → `ai`;
     - bỏ eureka, openfeign, `spring-boot-maven-plugin`;
     - thêm dependency `com.edu:exam`;
-    - thêm `com.fasterxml.jackson.core:jackson-databind` tường minh, **không ghi version** (Boot 4 vẫn quản lý version Jackson 2), vì code ai dùng Jackson 2 mà trước đây nó đến gián tiếp qua Eureka/Feign;
+    - thêm `com.fasterxml.jackson.core:jackson-databind` tường minh, **không ghi version** (Boot 4 vẫn quản lý version Jackson 2), vì code ai dùng Jackson 2 mà trước đây nó đến gián tiếp qua Eureka/Feign. `convertValue` ở trên dùng Jackson 3 của Boot, là cách gần nhất với converter Feign dùng trước đây;
     - **giữ** `pdfbox`.
   - Parent pom: `ai-service` → `ai`. app thêm dependency `ai`.
 - Kiểm tra (đăng nhập user, đã nộp ít nhất 1 bài):
   - `GET /api/coach/<userId>/analysis` trả nodes và edges.
   - `GET /api/coach/<userId>/learning-path?daysRemaining=7` chạy được (native vector query, có gọi Gemini).
   - `curl -N "localhost:8080/api/coach/node/<topicId>/explain/stream?userId=<id>"` trả event SSE từng phần, không bị bọc.
+  - So với baseline kịch bản `analysis`: body giống hệt, **kể cả thứ tự key** trong mỗi node.
   - Chạy với `INGEST_ENABLED=true`: `GET /api/ai/admin/ingest/status` trả 200 (**không** gọi POST ingest).
   - **Cuối phase**: chạy FE local (`npm run dev`) trỏ vào monolith và đi hết luồng người dùng: đăng ký, đăng nhập, xem đề, làm bài, lịch sử, tài liệu PDF, AI coach. Đây là mốc "refactor xong".
 - Commit: `refactor(ai): move ai service into monolith and call exam in-process`.
@@ -524,6 +584,29 @@ Quy ước chạy:
   - Chạy lại các curl kiểm tra của 5.4, 6.1 và 7.1, tất cả phải pass.
   - **DB trống**: tạo tạm `itshiken_tmp`, trỏ `DB_URL` vào đó và khởi động app. Flyway chạy V1 rồi V2 không lỗi, bảng nằm đúng schema. Xong thì xoá DB tạm.
 - Commit: `refactor(db): split tables into per-module schemas`.
+
+### [ ] 8.2 Mốc tương đương 100% (không sửa code)
+- Model: Sonnet.
+- Làm:
+  - Chạy capture trên monolith, so **toàn bộ** kịch bản với `baseline/microservices`.
+  - Mọi khác biệt phải nằm trong bảng "Khác biệt bắt buộc" (phần Context) hoặc là id, email, số liệu attempt/rating của user test.
+  - Bạn tự đi lại các luồng trên FE local như ở 0.3, so với những gì đã ghi ở `baseline/README.md`. Các luồng hỏng sẵn ở stack cũ thì phải **hỏng y như cũ**.
+- Kiểm tra: không còn khác biệt nào ngoài danh sách. Nếu còn thì **dừng**, sửa phần refactor cho khớp, không sửa sang hướng "cho đúng".
+- Ghi kết quả (ngày chạy, số kịch bản khớp) vào đầu bước này.
+- Commit: `test: confirm monolith matches microservice baseline` (chỉ cập nhật plan).
+
+### [ ] 8.3 Sửa lỗ hổng giả mạo `X-User-Id` (sửa lỗi đầu tiên, bắt buộc trước khi deploy)
+- Model: Sonnet.
+- Điều kiện: bước 8.2 đã pass.
+- Lý do làm trước deploy: lỗ hổng này cho phép đọc rating của người khác bằng cách tự gửi header, và cũng có trên production cũ.
+- Làm:
+  - `JwtAuthFilter`: với **mọi** request đi qua filter (kể cả token sai hoặc thiếu), bọc request để xoá `X-User-Id` client gửi; token hợp lệ thì gắn lại từ JWT.
+  - `baseline/README.md`: chuyển `spoof-x-user-id` vào mục "Khác biệt do sửa lỗi" (tạo mới), ghi rõ bước 8.3.
+  - Xoá mục tương ứng trong "Việc để sau".
+- Kiểm tra:
+  - Kịch bản `spoof-x-user-id`: không còn trả rating của user 1.
+  - Mọi kịch bản khác vẫn giống bước 8.2.
+- Commit: `fix(security): drop client-supplied X-User-Id header`.
 
 ## Phase 9 — PDF lên Cloudflare R2 (`files.itshiken.app`)
 
@@ -727,8 +810,10 @@ Nút **tải xuống**: R2 không có tham số kiểu `?download=1`, và presig
 ## Verification tổng
 - Bước 0.2 và 0.3: chạy stack cũ và chụp baseline. Đây là chuẩn để so sánh cho mọi bước sau.
 - Sau mỗi bước: `mvn -q -pl app -am package -DskipTests`, rồi khởi động app và curl theo phần Kiểm tra của bước đó. Từ 4.1 trở đi, so thêm với baseline.
-- Cuối Phase 7: chạy FE local trỏ vào monolith local và đi hết luồng người dùng (mốc refactor xong). Lúc này **toàn bộ** kịch bản baseline phải khớp, trừ các khác biệt được phép.
+- Cuối Phase 7: chạy FE local trỏ vào monolith local và đi hết luồng người dùng.
 - Bước 8.1: chạy lại toàn bộ curl và thử dựng DB trống từ V1 + V2.
+- Bước 8.2 (**mốc tương đương**): **toàn bộ** kịch bản baseline phải khớp, chỉ được khác ở bảng "Khác biệt bắt buộc".
+- Bước 8.3 trở đi: mỗi việc sửa lỗi là một bước riêng. So lại baseline để chắc chỉ kịch bản liên quan thay đổi.
 - Bước 10.1: chạy container giới hạn 512MB, mô phỏng Render.
 - Bước 10.5: kiểm thử trên domain thật.
 
@@ -739,11 +824,25 @@ Nút **tải xuống**: R2 không có tham số kiểu `?download=1`, và presig
 1. **Lên kế hoạch (Opus, đã xong)**: plan nằm ở `BE/docs/MONOLITH_PLAN.md`, session nào cũng đọc được.
 2. **Đổi model để thực thi**: gõ `/model` và chọn **Sonnet**. Đây là mặc định nên dùng, vì Spring Boot 4 có nhiều chỗ đổi tên mà Haiku dễ đoán sai. Chỉ dùng **Haiku** cho các bước đánh dấu Haiku.
 3. **Mỗi bước một session sạch**: gõ `/clear` trước mỗi bước. Rồi dán prompt mẫu:
-   > Đọc `BE/docs/MONOLITH_PLAN.md`. Chỉ thực hiện **bước X.Y**: làm đúng mục "Làm", chạy mục "Kiểm tra", nếu pass thì commit đúng message ghi trong bước, đánh dấu `[x]` cạnh bước đó trong file plan. Sau đó DỪNG và báo cáo kết quả kiểm tra. Nếu gặp tình huống plan không lường trước (lỗi compile lạ, plan mâu thuẫn với code), **dừng và hỏi**, không tự thiết kế lại.
+   > Đọc `BE/docs/MONOLITH_PLAN.md`. Chỉ thực hiện **bước X.Y**: làm đúng mục "Làm", chạy mục "Kiểm tra", nếu pass thì commit đúng message ghi trong bước, đánh dấu `[x]` cạnh bước đó trong file plan. Sau đó DỪNG và báo cáo kết quả kiểm tra. Nếu gặp tình huống plan không lường trước (lỗi compile lạ, plan mâu thuẫn với code), **dừng và hỏi**, không tự thiết kế lại. Trước bước 8.3, **không sửa bất kỳ lỗi nào của code cũ**, kể cả khi thấy rõ là sai: chỉ ghi vào mục "Việc để sau".
 4. **Review**: bạn tự kiểm tra (curl, FE). Với các bước có ghi "nhờ Opus review" (1.4, 4.1, 4.2, 8.1), chạy `/model` → Opus, `/clear`, rồi nhờ: "Review commit HEAD so với bước X.Y trong `BE/docs/MONOLITH_PLAN.md`, chỉ ra chỗ sai lệch".
 5. **Khi model rẻ bị kẹt** quá 2 lần ở cùng một lỗi: đổi sang Opus cho riêng lỗi đó, sửa xong thì đổi lại.
 
 ---
 
-## Việc để sau (chỉ làm khi refactor xong và production chạy ổn định)
+## Việc để sau (chỉ làm sau mốc 8.2; mục ghi "trước deploy" thì làm trước Phase 10)
+
+Đây là các lỗi **có sẵn ở stack cũ**, được giữ nguyên trong lúc refactor theo nguyên tắc "giữ nguyên hành vi 100%". Mỗi mục sửa trong **một bước riêng**, sau mốc 8.2, và so lại baseline. Ai thấy lỗi mới trong lúc làm thì ghi thêm vào đây, không sửa ngay.
+
+- **[bắt buộc trước deploy → bước 8.3] Giả mạo `X-User-Id`**: `JwtAuthFilter` (giống gateway cũ) giữ header client gửi khi không có token hợp lệ, nên tự gửi `X-User-Id` là đọc được rating của người khác (`GET /api/exams/<id>/rating`).
+- **Lỗi user trả HTTP 200**: `identity/.../user/exception/UserExceptionHandler` trả `ErrorResponse` với status 200, `GlobalResponseInterceptor` bọc thành `{"Success": false, ...}` (chữ S hoa), nên envelope ngoài cùng ghi `success:true`. Sửa: trả status thật, rồi bỏ lớp bọc riêng của user (`GlobalResponseInterceptor`, `RequestTimeInterceptor`, `WebConfig`).
+- **Đăng ký không nguyên tử**: `AuthServiceImpl.register` tạo user rồi mới lưu credential, 2 lần commit riêng. Lưu credential lỗi thì để lại user mồ côi. Sửa: `@Transactional`.
+- **Kiểm tra trùng theo tên, không theo email**: `UserService.createUser` kiểm tra `existsByName` và ném `RuntimeException` (thành 500). Sửa: kiểm tra theo email (auth đã kiểm tra email trong `credentials`), trả 409.
+- **`POST /api/users` công khai**: ai cũng tạo được bản ghi user mà không có credential. Trước kia endpoint này dành cho auth gọi nội bộ. Sửa: bỏ endpoint, hoặc chặn ở `SecurityConfig`.
+- **AI coach tin `userId` trên URL**: `/api/coach/{userId}/...` và `?userId=` không kiểm tra người gọi, nên ai cũng xem và kích hoạt phân tích cho user khác. `GET .../analysis` còn **ghi** vào `user_topic_mastery` (GET có tác dụng phụ). Sửa: lấy userId từ `X-User-Id`, thêm các path này vào danh sách protected.
+- **Ghi dữ liệu không cần quyền admin**: `POST/PUT/DELETE /api/exams/**` và `/api/materials/**` chỉ cần đăng nhập. Ingest chỉ được chặn bằng cờ `INGEST_ENABLED`, không có xác thực admin.
+- **Path traversal ở file tài liệu**: `MaterialFileController` không kiểm tra đường dẫn sau khi `resolve` còn nằm trong `file.base-path`. Lỗi này tự hết sau bước 9.4, vì không còn đọc ổ đĩa.
+- **Thiếu khoá ngoại**: `credentials.user_id`, `exam_attempts.user_id`, `exam_ratings.user_id`, `user_topic_mastery.user_id` trước kia nằm ở DB khác nên không có FK (đã gây ra dữ liệu mồ côi, xem 1.3). Giờ chung một DB nên thêm FK được, bằng migration mới.
+- **Cookie `refresh_token`**: `AuthController` ghi cứng max-age 30 ngày, không đọc `jwt.refresh-expiration`.
+- **DTO trùng giữa ai và exam**: `AICoachAnalysisDTO`, `NodeDTO`, `EdgeDTO` có ở cả hai module (giữ lại ở 7.1 để JSON không đổi thứ tự key). Gộp về một bản. Thứ tự key trong JSON của `/api/coach/*/analysis` sẽ đổi, FE đọc theo tên nên không ảnh hưởng.
 - Cookie auth: đổi `.sameSite(cookieSecure ? "None" : "Lax")` thành `.sameSite("Lax")` cố định, `Secure` vẫn theo `COOKIE_SECURE`. Trình duyệt luôn gọi `/api` cùng domain qua rewrite của Vercel nên không cần `None`, mà `Lax` an toàn hơn trước CSRF. Kiểm tra lại đăng nhập, refresh và AI coach trên domain thật.
