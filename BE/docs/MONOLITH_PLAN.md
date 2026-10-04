@@ -581,7 +581,7 @@ Quy ước chạy:
 - Ghi kết quả (ngày chạy, số kịch bản khớp) vào đầu bước này.
 - Commit: `test: confirm monolith matches microservice baseline` (chỉ cập nhật plan).
 
-### [ ] 7.3 Xoá phần microservice còn sót
+### [x] 7.3 Xoá phần microservice còn sót
 - Model: Haiku.
 - Điều kiện: 7.2 đã pass. Từ đây không cần chạy lại stack cũ trên nhánh này nữa; nếu cần thì chạy từ tag `pre-monolith` (bước 7.5).
 - Làm:
