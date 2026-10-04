@@ -1,6 +1,6 @@
-package com.testwebsite.backend.material.repository;
+package com.edu.material.repository;
 
-import com.testwebsite.backend.material.entity.LearningMaterial;
+import com.edu.material.entity.LearningMaterial;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

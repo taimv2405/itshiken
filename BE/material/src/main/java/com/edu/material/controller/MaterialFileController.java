@@ -1,8 +1,8 @@
-package com.testwebsite.backend.material.controller;
+package com.edu.material.controller;
 
-import com.testwebsite.backend.material.entity.LearningMaterial;
-import com.testwebsite.backend.material.exception.ResourceNotFoundException;
-import com.testwebsite.backend.material.repository.LearningMaterialRepository;
+import com.edu.material.entity.LearningMaterial;
+import com.edu.material.exception.ResourceNotFoundException;
+import com.edu.material.repository.LearningMaterialRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.FileSystemResource;
