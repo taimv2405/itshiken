@@ -128,7 +128,7 @@ async function main() {
   await call('categories', 'GET', '/api/categories');
   const exams = await call('exams', 'GET', '/api/exams');
   await call('exams-popular', 'GET', '/api/exams/popular');
-  const examId = dataOf(exams)?.[0]?.id;
+  const examId = opt('exam', null) ?? dataOf(exams)?.[0]?.id;
   if (examId) {
     await call('exam-detail', 'GET', `/api/exams/${examId}`);
     await call('exam-questions', 'GET', `/api/exams/${examId}/questions`);

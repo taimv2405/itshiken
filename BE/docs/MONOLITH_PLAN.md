@@ -568,7 +568,10 @@ Quy ước chạy:
   - **Cuối phase**: chạy FE local (`npm run dev`) trỏ vào monolith và đi hết luồng người dùng: đăng ký, đăng nhập, xem đề, làm bài, lịch sử, tài liệu PDF, AI coach.
 - Commit: `refactor(ai): move ai service into monolith and call exam in-process`.
 
-### [ ] 7.2 Mốc tương đương 100% (không sửa code)
+### [x] 7.2 Mốc tương đương 100% (không sửa code)
+> **Làm khác plan:** thêm tham số tuỳ chọn `--exam <id>` vào `capture.mjs`. Lý do: `ExamRepository.findAll()` không có `ORDER BY`, nên thứ tự đề là thứ tự vật lý của heap. DB mới (sau dump/restore) trả `fe-2025-a`/`it-passport-2024` lên đầu thay cho `ap-2025-autumn-morning`, làm script chọn phải đề khác và mọi kịch bản theo đề lệch theo. Chạy monolith với `--exam ap-2025-autumn-morning` để so cùng một đề. Mặc định của script không đổi.
+>
+> **Kết quả (2026-10-04):** 23/23 kịch bản khớp baseline. Khác biệt còn lại chỉ là id/email/thời gian của user test, `participants` (tăng theo số lần nộp bài), văn bản LLM của kịch bản `23` (SSE, status và content-type giống hệt), và thứ tự danh sách ở `02-exams` (do không có `ORDER BY`, ghi vào "Việc để sau"). Header, thứ tự key, `22-coach-analysis` (nodes, edges, thứ tự key) giống hệt. Phần FE local (luồng người dùng) bạn tự đi lại.
 - Model: Sonnet.
 - Làm:
   - Chạy capture trên monolith, so **toàn bộ** kịch bản với `baseline/microservices`.
@@ -886,4 +889,9 @@ Quy trình chung cho **mỗi** lỗi trong mục "Việc để sau":
 - **Thiếu khoá ngoại**: `credentials.user_id`, `exam_attempts.user_id`, `exam_ratings.user_id`, `user_topic_mastery.user_id` trước kia nằm ở DB khác nên không có FK (đã gây ra dữ liệu mồ côi, xem 1.3). Giờ chung một DB nên thêm FK được, bằng migration mới.
 - **Cookie `refresh_token`**: `AuthController` ghi cứng max-age 30 ngày, không đọc `jwt.refresh-expiration`.
 - **DTO trùng giữa ai và exam**: `AICoachAnalysisDTO`, `NodeDTO`, `EdgeDTO` có ở cả hai module (giữ lại ở 7.1 để JSON không đổi thứ tự key). Gộp về một bản. Thứ tự key trong JSON của `/api/coach/*/analysis` sẽ đổi, FE đọc theo tên nên không ảnh hưởng.
+- **Danh sách đề không có thứ tự cố định**: `ExamRepository.findAll()` (dùng ở `ExamService`) không có `ORDER BY`, nên `GET /api/exams` trả theo thứ tự vật lý của heap và có thể đổi sau mỗi lần dump/restore hay vacuum. Sửa: thêm `ORDER BY` rõ ràng (ví dụ theo `created_at` hoặc `id`).
+- **Gemini lỗi upstream trả 500**: `GeminiService.callStructured` bọc mọi lỗi (kể cả 503 "high demand" của Google) thành `RuntimeException("Failed structured response")`, nên `GET /api/coach/node/<id>/explain` trả 500. Sửa: map lỗi upstream 429/503 thành 503 kèm message dễ hiểu.
+- **Gọi Gemini không có timeout rõ ràng**: một request explain gặp phản hồi bị cắt rồi 503 chạy 48 giây mới trả lỗi (retry không có giới hạn thời gian). Sửa: đặt timeout cho `RestClient` và giới hạn tổng thời gian retry.
+- **RAG gọi embedding với query rỗng**: `CoachService.generateLearningPath` (và bản stream) khi user chưa có bài làm nào thì `ragQuery = ""`, `RagService.retrieveContext` vẫn gọi Gemini embedding và nhận 400 "contains an empty Part" (chỉ ghi WARN rồi đi tiếp không có context). Sửa: bỏ qua RAG khi query rỗng, và cân nhắc không gọi LLM khi không có chủ đề yếu.
+- **FE ẩn lộ trình khi chưa có bài làm** (`FE/src/views/AICoachTab.tsx`, nhánh `weakTopics.length === 0`): user mới chỉ thấy "Xuất sắc! Không có chủ đề yếu nào" dù chưa làm bài, trong khi BE vẫn trả một lộ trình chung chung. Sửa: phân biệt "chưa có dữ liệu" với "không có chủ đề yếu".
 - Cookie auth: đổi `.sameSite(cookieSecure ? "None" : "Lax")` thành `.sameSite("Lax")` cố định, `Secure` vẫn theo `COOKIE_SECURE`. Trình duyệt luôn gọi `/api` cùng domain qua rewrite của Vercel nên không cần `None`, mà `Lax` an toàn hơn trước CSRF. Kiểm tra lại đăng nhập, refresh và AI coach trên domain thật.
