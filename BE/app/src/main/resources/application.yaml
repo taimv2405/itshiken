@@ -8,6 +8,9 @@ server:
     threads:
       max: 40
 
+file:
+  base-path: ${FILE_BASE_PATH:../material}
+
 spring:
   application:
     name: itshiken-backend

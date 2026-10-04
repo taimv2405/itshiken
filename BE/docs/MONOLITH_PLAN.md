@@ -338,7 +338,8 @@ Quy ước chạy:
 
 ## Phase 3 — Material (module đơn giản nhất, làm trước để có endpoint test)
 
-### [ ] 3.1 Chuyển material_service → `material`
+### [x] 3.1 Chuyển material_service → `material`
+> **Làm khác plan:** bỏ dòng `<version>0.0.1-SNAPSHOT</version>` trong `material/pom.xml`, để module dùng version `1.0-SNAPSHOT` của parent. Lý do: `app` khai báo dependency bằng `${project.version}`, giữ version riêng thì hai bên lệch nhau.
 - Model: Sonnet.
 - Làm:
   - `git mv material_service material`. `Material_Data` đi theo, nằm ở `BE/material/Material_Data`.
