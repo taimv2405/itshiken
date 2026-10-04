@@ -1,4 +1,4 @@
-# Kế hoạch: gom backend microservice → modular monolith (deploy free)
+﻿# Kế hoạch: gom backend microservice → modular monolith (deploy free)
 
 ## Context
 
@@ -439,7 +439,7 @@ Quy ước chạy:
 
 ## Phase 5 — Identity (auth + user)
 
-### [ ] 5.1 user_service → `identity` (phần user)
+### [x] 5.1 user_service → `identity` (phần user)
 - Model: Sonnet.
 - Làm:
   - `git mv user_service identity`.

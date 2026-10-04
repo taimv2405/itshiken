@@ -10,8 +10,8 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
-@RestControllerAdvice
-public class GlobalExceptionHandler {
+@RestControllerAdvice(basePackages = "com.edu.identity.user")
+public class UserExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ErrorResponse handleException(
