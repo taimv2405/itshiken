@@ -1,6 +1,6 @@
-package com.edu.user_service.config;
+package com.edu.identity.user.config;
 
-import com.edu.user_service.interceptor.RequestTimeInterceptor;
+import com.edu.identity.user.interceptor.RequestTimeInterceptor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
