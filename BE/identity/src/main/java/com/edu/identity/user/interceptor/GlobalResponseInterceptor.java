@@ -17,7 +17,8 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
-@RestControllerAdvice
+@RestControllerAdvice(basePackages = "com.edu.identity.user")
+@Order(Ordered.HIGHEST_PRECEDENCE)
 public class GlobalResponseInterceptor implements ResponseBodyAdvice<Object> {
 
     @Override
