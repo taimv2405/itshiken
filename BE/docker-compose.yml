@@ -17,25 +17,6 @@ services:
       timeout: 10s
       retries: 5
 
-  # 2. API Gateway
-  api_gateway:
-    build:
-      context: .
-      dockerfile: api_gateway/Dockerfile
-    container_name: api-gateway
-    ports:
-      - "8080:8080"
-    depends_on:
-      discovery_server:
-        condition: service_healthy
-    networks:
-      - be-network
-    environment:
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
-      - SPRING_PROFILES_ACTIVE=prod
-      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
-      - JWT_SECRET=${JWT_SECRET}
-
   # 3. Auth Service
   auth_service:
     build:

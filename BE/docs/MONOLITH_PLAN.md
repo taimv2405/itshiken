@@ -92,6 +92,8 @@ Nhánh 2, 3, 4 không phụ thuộc nhau về code nên làm song song được.
 | `/api/ai-coach/**`. Cũ: chỉ gọi nội bộ, ngoài vào là 404. Mới: xoá controller ở 7.1, ngoài vào vẫn 404 (dạng `/error`) | ai gọi thẳng service Java, không còn qua HTTP |
 | Đăng ký với tên đã tồn tại. Cũ: 500, message là lỗi `DecodeException` của Feign. Mới: 500, message `"Người dùng đã tồn tại"` | Không còn Feign. Status vẫn giữ là 500 |
 | Một pool kết nối chung (5) thay cho mỗi service một pool; Tomcat tối đa 40 thread | Gói free của Render (512MB) và Neon (100 CU-giờ). Không đổi kết quả của request, chỉ ảnh hưởng khi rất nhiều người dùng cùng lúc |
+| CORS preflight và request bị từ chối CORS. Cũ: `CorsWebFilter` trả trước khi gateway gắn header, preflight chỉ có header CORS, origin lạ nhận 403 body rỗng. Mới: preflight có thêm 4 header gateway (và header mặc định của Spring Security ở chain mặc định), origin lạ nhận 403 body `Invalid CORS request` | CORS xử lý trong Spring Security của servlet, `HeaderWriterFilter` chạy trước `CorsFilter`. Trình duyệt đi qua proxy Vercel nên gần như không gặp |
+| URL làm giả. Cũ: gateway so path thô bằng `AntPathMatcher`. Mới: Spring Security so path đã giải mã và `StrictHttpFirewall` áp dụng cả cho `/api/materials/**`. Ví dụ `GET /api/users/m%65` không cookie: cũ đi tiếp, mới 401. `GET /api/materials/5;x=1`: cũ 200, mới 400 | Không còn gateway, và `material_service` cũ không có Spring Security. Cả hai đều chặt hơn bản cũ, chỉ xảy ra với URL cố tình tạo |
 
 ---
 
@@ -383,7 +385,7 @@ Quy ước chạy:
   - `/api/materials/<id>/file` vẫn trả PDF nhị phân, không bị bọc.
 - Commit: `feat(common): add api response envelope and request logging`.
 
-### [ ] 4.2 Security: JWT filter, protected path, CORS, header
+### [x] 4.2 Security: JWT filter, protected path, CORS, header
 > **Sửa lại ở 4.3:** không xoá `X-User-Id` của client (việc đó dời sang F1), header của material phải giống `material_service` cũ, CORS chọn origin như profile của gateway.
 - Model: Sonnet. Nhờ Opus review.
 - Làm:
@@ -410,7 +412,7 @@ Quy ước chạy:
   - `POST /api/ai/admin/ingest` trả 403.
 - Commit: `feat(security): replace gateway auth with in-app jwt filter`.
 
-### [ ] 4.3 Gỡ các thay đổi hành vi đã làm ở 4.1 và 4.2
+### [x] 4.3 Gỡ các thay đổi hành vi đã làm ở 4.1 và 4.2
 - Model: Sonnet. Nhờ Opus review.
 - Bối cảnh: theo nguyên tắc "giữ nguyên hành vi 100%" (phần Context), 4 chỗ trong code hiện tại đang làm khác gateway cũ. Bước này trả chúng về đúng như cũ. Muốn sửa lỗi thì để tới Phase F (nhánh `fix/*`) và ghi vào mục "Việc để sau".
 - Làm:

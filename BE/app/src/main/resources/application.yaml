@@ -55,6 +55,17 @@ spring:
     async:
       request-timeout: 120000
 
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: 900000
+
+cors:
+  allowed-origins: ${ALLOWED_ORIGINS:http://localhost:3000,http://localhost:3001}
+
+app:
+  admin:
+    ingest-enabled: ${INGEST_ENABLED:false}
+
 management:
   endpoints:
     web:
