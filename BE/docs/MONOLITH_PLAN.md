@@ -460,7 +460,7 @@ Quy ước chạy:
   - `GET /api/users/<id có thật>` (DB mới có sẵn 53 user cũ): `success:true`, `data` là profile.
 - Commit: `refactor(identity): move user service into identity module`.
 
-### [ ] 5.2 Gộp auth_service vào `identity`, bỏ Feign
+### [x] 5.2 Gộp auth_service vào `identity`, bỏ Feign
 - Model: Sonnet.
 - Làm:
   - `git mv` toàn bộ `auth_service/src/main/java/com/edu/auth_service/*` → `identity/src/main/java/com/edu/identity/auth/`, và test tương ứng sang `identity/src/test/...`. Sửa `package` và `import`.
