@@ -24,7 +24,7 @@
         <module>discovery_server</module>
         <module>exam</module>
         <module>material</module>
-        <module>ai-service</module>
+        <module>ai</module>
     </modules>
 
     <properties>
