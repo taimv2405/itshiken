@@ -25,11 +25,11 @@ public class RequestTimingFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
         long start = System.currentTimeMillis();
         request.setAttribute(START_TIME_ATTR, start);
-        response.setHeader("X-Request-Id", UUID.randomUUID().toString().replace("-", "").substring(0, 12));
+        String requestId = UUID.randomUUID().toString().replace("-", "").substring(0, 12);
         try {
             chain.doFilter(request, response);
         } finally {
-            log.info("{} {} {} {}ms", request.getMethod(), request.getRequestURI(),
+            log.info("[{}] {} {} {} {}ms", requestId, request.getMethod(), request.getRequestURI(),
                     response.getStatus(), System.currentTimeMillis() - start);
         }
     }

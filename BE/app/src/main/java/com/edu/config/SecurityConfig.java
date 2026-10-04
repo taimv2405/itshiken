@@ -7,10 +7,12 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -31,38 +33,69 @@ public class SecurityConfig {
 
     private static final String UNAUTHORIZED_MESSAGE = "Bạn chưa đăng nhập hoặc phiên đăng nhập đã hết hạn";
 
+    /**
+     * material_service had no Spring Security, so its responses carry only the 4 gateway headers
+     * and none of the Spring Security defaults (Cache-Control, Pragma, Expires, X-XSS-Protection).
+     */
     @Bean
+    @Order(1)
+    public SecurityFilterChain materialFilterChain(HttpSecurity http, JwtService jwtService, ObjectMapper objectMapper)
+            throws Exception {
+        http.securityMatcher("/api/materials/**");
+        applyCommon(http, jwtService, objectMapper);
+        http.headers(headers -> {
+            headers.defaultsDisabled();
+            gatewayHeaders(headers);
+            headers.contentTypeOptions(Customizer.withDefaults());
+        });
+        http.authorizeHttpRequests(auth -> {
+            auth.requestMatchers(HttpMethod.POST, "/api/materials").authenticated();
+            auth.requestMatchers(HttpMethod.PUT, "/api/materials/**").authenticated();
+            auth.requestMatchers(HttpMethod.DELETE, "/api/materials/**").authenticated();
+            auth.anyRequest().permitAll();
+        });
+        return http.build();
+    }
+
+    /** Auth, user, exam and ai: Spring Security default headers plus the 4 gateway headers. */
+    @Bean
+    @Order(2)
     public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtService jwtService, ObjectMapper objectMapper,
                                                    @Value("${app.admin.ingest-enabled:false}") boolean ingestEnabled)
             throws Exception {
+        applyCommon(http, jwtService, objectMapper);
+        http.headers(this::gatewayHeaders);
+        http.authorizeHttpRequests(auth -> {
+            auth.requestMatchers(HttpMethod.GET, "/api/users/me").authenticated();
+            auth.requestMatchers(HttpMethod.POST, "/api/exams").authenticated();
+            auth.requestMatchers(HttpMethod.PUT, "/api/exams/**").authenticated();
+            auth.requestMatchers(HttpMethod.DELETE, "/api/exams/**").authenticated();
+            auth.requestMatchers(HttpMethod.POST, "/api/exams/*/submit").authenticated();
+            auth.requestMatchers(HttpMethod.POST, "/api/exams/*/rating").authenticated();
+            auth.requestMatchers(HttpMethod.GET, "/api/attempts/me/**").authenticated();
+            if (!ingestEnabled) {
+                auth.requestMatchers("/api/ai/admin/**").denyAll();
+            }
+            auth.anyRequest().permitAll();
+        });
+        return http.build();
+    }
+
+    private void gatewayHeaders(HeadersConfigurer<HttpSecurity> headers) {
+        headers.frameOptions(frame -> frame.sameOrigin())
+                .referrerPolicy(ref -> ref.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
+                .permissionsPolicyHeader(p -> p.policy("geolocation=(), microphone=(), camera=()"));
+    }
+
+    private void applyCommon(HttpSecurity http, JwtService jwtService, ObjectMapper objectMapper) throws Exception {
         http.csrf(csrf -> csrf.disable())
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .httpBasic(basic -> basic.disable())
                 .formLogin(form -> form.disable())
-                // No anonymous token: denyAll below must answer 403, not 401.
+                // No anonymous token: denyAll must answer 403, not 401.
                 .anonymous(anon -> anon.disable())
                 .cors(Customizer.withDefaults())
-                .headers(headers -> headers
-                        .frameOptions(frame -> frame.sameOrigin())
-                        .referrerPolicy(ref -> ref.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
-                        .permissionsPolicyHeader(p -> p.policy("geolocation=(), microphone=(), camera=()")))
                 .addFilterBefore(new JwtAuthFilter(jwtService), UsernamePasswordAuthenticationFilter.class)
-                .authorizeHttpRequests(auth -> {
-                    auth.requestMatchers(HttpMethod.GET, "/api/users/me").authenticated();
-                    auth.requestMatchers(HttpMethod.POST, "/api/exams").authenticated();
-                    auth.requestMatchers(HttpMethod.PUT, "/api/exams/**").authenticated();
-                    auth.requestMatchers(HttpMethod.DELETE, "/api/exams/**").authenticated();
-                    auth.requestMatchers(HttpMethod.POST, "/api/exams/*/submit").authenticated();
-                    auth.requestMatchers(HttpMethod.POST, "/api/exams/*/rating").authenticated();
-                    auth.requestMatchers(HttpMethod.GET, "/api/attempts/me/**").authenticated();
-                    auth.requestMatchers(HttpMethod.POST, "/api/materials").authenticated();
-                    auth.requestMatchers(HttpMethod.PUT, "/api/materials/**").authenticated();
-                    auth.requestMatchers(HttpMethod.DELETE, "/api/materials/**").authenticated();
-                    if (!ingestEnabled) {
-                        auth.requestMatchers("/api/ai/admin/**").denyAll();
-                    }
-                    auth.anyRequest().permitAll();
-                })
                 .exceptionHandling(ex -> ex.authenticationEntryPoint((request, response, e) -> {
                     Object start = request.getAttribute(RequestTimingFilter.START_TIME_ATTR);
                     long elapsed = start instanceof Long s ? System.currentTimeMillis() - s : 0;
@@ -78,12 +111,11 @@ public class SecurityConfig {
                     response.setContentType(MediaType.APPLICATION_JSON_VALUE);
                     response.getOutputStream().write(objectMapper.writeValueAsBytes(body));
                 }));
-        return http.build();
     }
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource(@Value("${cors.allowed-origins:}") String allowedOrigins) {
-        List<String> origins = new ArrayList<>(List.of("http://localhost:3000", "http://localhost:3001"));
+        List<String> origins = new ArrayList<>();
         Arrays.stream(allowedOrigins.split(",")).map(String::trim).filter(o -> !o.isEmpty()).forEach(origins::add);
 
         CorsConfiguration config = new CorsConfiguration();
