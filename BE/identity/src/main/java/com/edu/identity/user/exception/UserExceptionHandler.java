@@ -1,6 +1,6 @@
-package com.edu.user_service.exception;
+package com.edu.identity.user.exception;
 
-import com.edu.user_service.dto.ErrorResponse;
+import com.edu.identity.user.dto.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.MethodArgumentNotValidException;

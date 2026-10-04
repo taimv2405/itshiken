@@ -1,9 +1,11 @@
-package com.edu.user_service.interceptor;
+package com.edu.identity.user.interceptor;
 
-import com.edu.user_service.dto.ApiResponse;
-import com.edu.user_service.dto.ErrorResponse;
+import com.edu.identity.user.dto.ApiResponse;
+import com.edu.identity.user.dto.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.core.MethodParameter;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.*;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.server.*;

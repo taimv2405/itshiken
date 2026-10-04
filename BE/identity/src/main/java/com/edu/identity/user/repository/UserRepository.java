@@ -1,6 +1,6 @@
-package com.edu.user_service.repository;
+package com.edu.identity.user.repository;
 
-import com.edu.user_service.entity.User;
+import com.edu.identity.user.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface UserRepository extends JpaRepository<User, Long> {

@@ -1,15 +1,12 @@
-package com.edu.user_service.dto;
+package com.edu.identity.user.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
-
 @Data
 @AllArgsConstructor
-public class ErrorResponse {
-
+public class ApiResponse<T> {
     private int statusCode;
     private String message;
-
-
+    private T data;
 }
