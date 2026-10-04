@@ -1,0 +1,130 @@
+package com.edu.identity.auth.service.impl;
+
+import com.edu.identity.auth.dto.internal.LoginResult;
+import com.edu.identity.auth.dto.internal.RefreshResult;
+import com.edu.identity.auth.dto.request.LoginRequest;
+import com.edu.identity.auth.dto.request.RegisterRequest;
+import com.edu.identity.auth.dto.response.RegisterResponse;
+import com.edu.identity.auth.entity.Credential;
+import com.edu.identity.auth.entity.RefreshToken;
+import com.edu.identity.auth.exception.AuthException;
+import com.edu.identity.auth.exception.DuplicateEmailException;
+import com.edu.identity.auth.repository.CredentialRepository;
+import com.edu.identity.auth.repository.RefreshTokenRepository;
+import com.edu.identity.auth.service.AuthService;
+import com.edu.identity.user.dto.CreateUserRequest;
+import com.edu.identity.user.entity.User;
+import com.edu.identity.user.service.UserService;
+import com.edu.common.security.JwtService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
+public class AuthServiceImpl implements AuthService {
+
+    private final CredentialRepository credentialRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
+    private final UserService userService;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
+
+    @Value("${jwt.refresh-expiration}")
+    private long refreshExpiration;
+
+    @Override
+    public RegisterResponse register(RegisterRequest request) {
+        if (credentialRepository.findByEmail(request.getEmail()).isPresent()) {
+            throw new DuplicateEmailException("Email đã được sử dụng");
+        }
+
+        CreateUserRequest createUserRequest = new CreateUserRequest();
+        createUserRequest.setName(request.getName());
+        createUserRequest.setPhoneNumber(request.getPhoneNumber());
+        createUserRequest.setCurrent(request.getStatus());
+        createUserRequest.setEmail(request.getEmail());
+        User user = userService.createUser(createUserRequest);
+
+        Long userId = user.getId();
+
+        Credential credential = credentialRepository.save(
+                Credential.builder()
+                        .userId(userId)
+                        .email(request.getEmail())
+                        .password(passwordEncoder.encode(request.getPassword()))
+                        .build()
+        );
+
+        return new RegisterResponse(credential.getId());
+    }
+
+    @Override
+    @Transactional
+    public LoginResult login(LoginRequest request) {
+        Credential credential = credentialRepository
+                .findByEmail(request.getEmail())
+                .orElseThrow(() -> new AuthException("Email không tồn tại"));
+
+        if (!passwordEncoder.matches(request.getPassword(), credential.getPassword())) {
+            throw new AuthException("Sai mật khẩu");
+        }
+
+        String accessToken = jwtService.generateToken(credential.getUserId());
+        String refreshToken = issueRefreshToken(credential);
+
+        return new LoginResult(accessToken, refreshToken, credential.getUserId());
+    }
+
+    @Override
+    @Transactional
+    public RefreshResult refresh(String refreshTokenValue) {
+        RefreshToken stored = refreshTokenRepository.findByToken(refreshTokenValue)
+                .orElseThrow(() -> new AuthException("Refresh token không hợp lệ"));
+
+        if (stored.isRevoked()) {
+            throw new AuthException("Refresh token đã bị thu hồi");
+        }
+        if (stored.getExpiresAt().isBefore(Instant.now())) {
+            throw new AuthException("Refresh token đã hết hạn");
+        }
+
+        // Rotate: revoke old token and issue new pair
+        stored.setRevoked(true);
+        refreshTokenRepository.save(stored);
+
+        Credential credential = stored.getCredential();
+        String newAccessToken = jwtService.generateToken(credential.getUserId());
+        String newRefreshToken = issueRefreshToken(credential);
+
+        return new RefreshResult(newAccessToken, newRefreshToken);
+    }
+
+    @Override
+    @Transactional
+    public void logout(String refreshTokenValue) {
+        refreshTokenRepository.findByToken(refreshTokenValue).ifPresent(token -> {
+            token.setRevoked(true);
+            refreshTokenRepository.save(token);
+        });
+    }
+
+    private String issueRefreshToken(Credential credential) {
+        String tokenValue = UUID.randomUUID().toString();
+        refreshTokenRepository.save(
+                RefreshToken.builder()
+                        .token(tokenValue)
+                        .credential(credential)
+                        .expiresAt(Instant.now().plusMillis(refreshExpiration))
+                        .revoked(false)
+                        .createdAt(Instant.now())
+                        .build()
+        );
+        return tokenValue;
+    }
+}

@@ -1,0 +1,22 @@
+{
+  "method": "POST",
+  "path": "/api/auth/login",
+  "status": 200,
+  "content-type": "application/json",
+  "cache-control": "no-cache, no-store, max-age=0, must-revalidate",
+  "x-frame-options": "SAMEORIGIN",
+  "location": null,
+  "set-cookie": [
+    "access_token; Path=/; Max-Age=900; HttpOnly; SameSite=Lax",
+    "refresh_token; Path=/api/auth; Max-Age=2592000; HttpOnly; SameSite=Lax"
+  ],
+  "body": {
+    "success": true,
+    "statusCode": 200,
+    "message": "Đăng nhập thành công",
+    "data": {
+      "userId": 77
+    },
+    "path": "/api/auth/login"
+  }
+}

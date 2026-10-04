@@ -1,0 +1,24 @@
+{
+  "method": "GET",
+  "path": "/api/users/me",
+  "status": 200,
+  "content-type": "application/json",
+  "cache-control": "no-cache, no-store, max-age=0, must-revalidate",
+  "x-frame-options": "SAMEORIGIN",
+  "location": null,
+  "set-cookie": [],
+  "body": {
+    "success": true,
+    "statusCode": 200,
+    "message": "OK",
+    "data": {
+      "id": 77,
+      "name": "bl56930683",
+      "phoneNumber": "0900000000",
+      "currentStatus": "student",
+      "email": "baseline-1791056930683@example.com",
+      "createdAt": "2026-10-03T19:48:50.869248Z"
+    },
+    "path": "/api/users/me"
+  }
+}

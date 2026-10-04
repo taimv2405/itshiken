@@ -18,28 +18,20 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>auth_service</module>
-        <module>user_service</module>
-        <module>discovery_server</module>
-        <module>exam-service</module>
-        <module>material_service</module>
-        <module>ai-service</module>
+        <module>common</module>
+        <module>app</module>
+        <module>identity</module>
+        <module>exam</module>
+        <module>material</module>
+        <module>ai</module>
     </modules>
 
     <properties>
         <java.version>21</java.version>
-        <spring-cloud.version>2025.1.1</spring-cloud.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
-            <dependency>
-                <groupId>org.springframework.cloud</groupId>
-                <artifactId>spring-cloud-dependencies</artifactId>
-                <version>${spring-cloud.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
             <dependency>
                 <groupId>io.jsonwebtoken</groupId>
                 <artifactId>jjwt-api</artifactId>
@@ -58,7 +50,7 @@
             <dependency>
                 <groupId>me.paulschwarz</groupId>
                 <artifactId>spring-dotenv</artifactId>
-                <version>3.0.0</version>
+                <version>5.1.0</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -66,12 +58,6 @@
         <repository>
             <id>central</id>
             <url>https://repo.maven.apache.org/maven2</url>
-        </repository>
-        <repository>
-            <id>spring-milestones</id>
-            <name>Spring Milestones</name>
-            <url>https://repo.spring.io/milestone</url>
-            <snapshots><enabled>false</enabled></snapshots>
         </repository>
     </repositories>
 

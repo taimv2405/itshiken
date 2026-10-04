@@ -1,0 +1,48 @@
+{
+  "method": "GET",
+  "path": "/api/coach/77/analysis",
+  "status": 200,
+  "content-type": "application/json",
+  "cache-control": "no-cache, no-store, max-age=0, must-revalidate",
+  "x-frame-options": "SAMEORIGIN",
+  "location": null,
+  "set-cookie": [],
+  "body": {
+    "success": true,
+    "statusCode": 200,
+    "message": "OK",
+    "data": {
+      "nodes": [
+        {
+          "id": "tp_01",
+          "name": "Corporate Activity",
+          "categoryName": "Strategy & Management",
+          "masteryScore": 0,
+          "errorRate": 0,
+          "totalAttempts": 0
+        },
+        {
+          "id": "tp_02",
+          "name": "Legal & Compliance",
+          "categoryName": "Strategy & Management",
+          "masteryScore": 0,
+          "errorRate": 0,
+          "totalAttempts": 0
+        }
+      ],
+      "edges": [
+        {
+          "from": "tp_11",
+          "to": "tp_12",
+          "relation": "PREREQUISITE"
+        },
+        {
+          "from": "tp_11",
+          "to": "tp_13",
+          "relation": "PREREQUISITE"
+        }
+      ]
+    },
+    "path": "/api/coach/77/analysis"
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "method": "GET",
+  "path": "/api/attempts/me/summary",
+  "status": 200,
+  "content-type": "application/json",
+  "cache-control": "no-cache, no-store, max-age=0, must-revalidate",
+  "x-frame-options": "SAMEORIGIN",
+  "location": null,
+  "set-cookie": [],
+  "body": {
+    "success": true,
+    "statusCode": 200,
+    "message": "OK",
+    "data": {
+      "completedCount": 1,
+      "recentAttempts": [
+        {
+          "createdAt": "2026-10-04T02:48:52.17866",
+          "examId": "ap-2025-autumn-morning",
+          "examTitle": {
+            "en": "Applied Information Technology Engineer Examination, Autumn Reiwa 7 (2025) edition - Morning Exam",
+            "ja": "令和7年度 秋期 応用情報技術者試験 午前試験",
+            "vi": "Kỳ thi Kỹ sư Công nghệ Thông tin Ứng dụng, Đợt Thu năm Reiwa 7 (năm 2025) - Đề thi buổi sáng"
+          },
+          "id": "1b5224cb-c499-40d7-aa77-b00be88eec3e",
+          "questionCount": 80,
+          "score": 1.25,
+          "timeSpentSeconds": 60,
+          "totalCorrect": 1
+        }
+      ],
+      "totalPracticeSeconds": 60
+    },
+    "path": "/api/attempts/me/summary"
+  }
+}
