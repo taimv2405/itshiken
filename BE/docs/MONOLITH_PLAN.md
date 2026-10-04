@@ -440,6 +440,7 @@ Quy ước chạy:
 ## Phase 5 — Identity (auth + user)
 
 ### [x] 5.1 user_service → `identity` (phần user)
+> **Làm khác plan:** bỏ dòng `<version>0.0.1-SNAPSHOT</version>` trong `identity/pom.xml`, để module dùng version của parent. Lý do: `app` khai báo dependency bằng ``, giữ version riêng thì hai bên lệch nhau.
 - Model: Sonnet.
 - Làm:
   - `git mv user_service identity`.
@@ -461,6 +462,7 @@ Quy ước chạy:
 - Commit: `refactor(identity): move user service into identity module`.
 
 ### [x] 5.2 Gộp auth_service vào `identity`, bỏ Feign
+> **Làm khác plan:** phần Kiểm tra chạy `package` với `-Dmaven.test.skip=true` thay cho `-DskipTests`. Lý do: `-DskipTests` vẫn biên dịch test, mà test của auth còn tham chiếu `UserServiceClient` đã bị xoá cho tới bước 5.3.
 - Model: Sonnet.
 - Làm:
   - `git mv` toàn bộ `auth_service/src/main/java/com/edu/auth_service/*` → `identity/src/main/java/com/edu/identity/auth/`, và test tương ứng sang `identity/src/test/...`. Sửa `package` và `import`.
@@ -483,7 +485,8 @@ Quy ước chạy:
 - Kiểm tra: `mvn -q -pl app -am package -DskipTests` pass, app khởi động được.
 - Commit: `refactor(identity): merge auth service and call user service in-process`.
 
-### [ ] 5.3 Sửa test của identity
+### [x] 5.3 Sửa test của identity
+> **Làm khác plan:** `JwtServiceTest` được viết lại chứ không chỉ chuyển sang `common`. Lý do: test cũ đã hỏng từ trước (dùng constructor rỗng và `init()` không còn tồn tại, kỳ vọng hết hạn 24h) nên không biên dịch được với `JwtService(secret, expiration)` của `common`.
 - Model: Sonnet.
 - Làm:
   - `AuthServiceTest`: mock `UserService` thay cho `UserServiceClient`.
@@ -493,7 +496,7 @@ Quy ước chạy:
 - Kiểm tra: `mvn -q -pl identity,common -am test` xanh.
 - Commit: `test(identity): adapt auth tests to in-process user service`.
 
-### [ ] 5.4 Kiểm thử E2E auth (không sửa code)
+### [x] 5.4 Kiểm thử E2E auth (không sửa code)
 - Model: Haiku.
 - Làm: dùng curl với cookie jar (`-c/-b`) chạy lần lượt:
   - `POST /api/auth/register`;

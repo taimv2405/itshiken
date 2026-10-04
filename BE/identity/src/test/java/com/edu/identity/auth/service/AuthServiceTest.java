@@ -1,8 +1,5 @@
 package com.edu.identity.auth.service;
 
-import com.edu.identity.auth.client.UserServiceClient;
-import com.edu.identity.auth.client.dto.CreateUserRequest;
-import com.edu.identity.auth.client.dto.UserResponse;
 import com.edu.identity.auth.dto.internal.LoginResult;
 import com.edu.identity.auth.dto.request.LoginRequest;
 import com.edu.identity.auth.dto.request.RegisterRequest;
@@ -12,7 +9,10 @@ import com.edu.identity.auth.exception.AuthException;
 import com.edu.identity.auth.exception.DuplicateEmailException;
 import com.edu.identity.auth.repository.CredentialRepository;
 import com.edu.identity.auth.repository.RefreshTokenRepository;
-import com.edu.identity.auth.security.JwtService;
+import com.edu.common.security.JwtService;
+import com.edu.identity.user.dto.CreateUserRequest;
+import com.edu.identity.user.entity.User;
+import com.edu.identity.user.service.UserService;
 import com.edu.identity.auth.service.impl.AuthServiceImpl;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -34,11 +34,17 @@ class AuthServiceTest {
 
     @Mock CredentialRepository  credentialRepository;
     @Mock RefreshTokenRepository refreshTokenRepository;
-    @Mock UserServiceClient     userServiceClient;
+    @Mock UserService           userService;
     @Mock PasswordEncoder       passwordEncoder;
     @Mock JwtService            jwtService;
 
     @InjectMocks AuthServiceImpl authService;
+
+    private static User userWithId(Long id) {
+        User user = new User();
+        user.setId(id);
+        return user;
+    }
 
     // ══════════════════════════════ LOGIN ═════════════════════════════════════
 
@@ -101,7 +107,7 @@ class AuthServiceTest {
     }
 
     @Test
-    @DisplayName("login: KHÔNG gọi user-service (regression guard)")
+    @DisplayName("login: KHÔNG gọi UserService (regression guard)")
     void login_khongGoiUserService_baoGio() {
         LoginRequest request = new LoginRequest();
         request.setEmail("user@gmail.com");
@@ -119,7 +125,7 @@ class AuthServiceTest {
 
         authService.login(request);
 
-        verifyNoInteractions(userServiceClient);
+        verifyNoInteractions(userService);
     }
 
     // ══════════════════════════════ REGISTER ══════════════════════════════════
@@ -134,17 +140,14 @@ class AuthServiceTest {
         request.setStatus("student");
         request.setPassword("password123");
 
-        UserResponse userResponse = new UserResponse();
-        userResponse.setSuccess(true);
-        userResponse.setStatusCode(200);
-        userResponse.setData(new UserResponse.UserData(99L, "Nguyen Van A"));
+        User user = userWithId(99L);
 
         Credential savedCredential = Credential.builder()
                 .id(5L).userId(99L).email("user@gmail.com").password("$2a$08$hashed")
                 .build();
 
         when(credentialRepository.findByEmail("user@gmail.com")).thenReturn(Optional.empty());
-        when(userServiceClient.createUser(any(CreateUserRequest.class))).thenReturn(userResponse);
+        when(userService.createUser(any(CreateUserRequest.class))).thenReturn(user);
         when(passwordEncoder.encode("password123")).thenReturn("$2a$08$hashed");
         when(credentialRepository.save(any(Credential.class))).thenReturn(savedCredential);
 
@@ -157,7 +160,7 @@ class AuthServiceTest {
     }
 
     @Test
-    @DisplayName("register: email đã tồn tại → throw DuplicateEmailException, KHÔNG gọi user-service")
+    @DisplayName("register: email đã tồn tại → throw DuplicateEmailException, KHÔNG gọi UserService")
     void register_emailDaTonTai_throwDuplicateEmailException() {
         RegisterRequest request = new RegisterRequest();
         request.setName("Test");
@@ -173,12 +176,12 @@ class AuthServiceTest {
                 .isInstanceOf(DuplicateEmailException.class)
                 .hasMessage("Email đã được sử dụng");
 
-        verifyNoInteractions(userServiceClient);
+        verifyNoInteractions(userService);
         verify(credentialRepository, never()).save(any());
     }
 
     @Test
-    @DisplayName("register: user-service thất bại → throw message từ user-service, KHÔNG lưu credential")
+    @DisplayName("register: UserService ném lỗi → lỗi được truyền lên, KHÔNG lưu credential")
     void register_userServiceThatBai_throwExceptionVaKhongLuuCredential() {
         RegisterRequest request = new RegisterRequest();
         request.setName("Test");
@@ -187,12 +190,8 @@ class AuthServiceTest {
         request.setStatus("student");
         request.setPassword("password123");
 
-        UserResponse failResponse = new UserResponse();
-        failResponse.setSuccess(false);
-        failResponse.setMessage("Lỗi tạo user");
-
         when(credentialRepository.findByEmail("test@gmail.com")).thenReturn(Optional.empty());
-        when(userServiceClient.createUser(any())).thenReturn(failResponse);
+        when(userService.createUser(any())).thenThrow(new RuntimeException("Lỗi tạo user"));
 
         assertThatThrownBy(() -> authService.register(request))
                 .isInstanceOf(RuntimeException.class)
@@ -211,12 +210,10 @@ class AuthServiceTest {
         request.setStatus("student");
         request.setPassword("rawPassword");
 
-        UserResponse userResponse = new UserResponse();
-        userResponse.setSuccess(true);
-        userResponse.setData(new UserResponse.UserData(1L, "Test"));
+        User user = userWithId(1L);
 
         when(credentialRepository.findByEmail("test@gmail.com")).thenReturn(Optional.empty());
-        when(userServiceClient.createUser(any())).thenReturn(userResponse);
+        when(userService.createUser(any())).thenReturn(user);
         when(passwordEncoder.encode("rawPassword")).thenReturn("$2a$08$encodedHash");
         when(credentialRepository.save(any())).thenReturn(
                 Credential.builder().id(1L).email("test@gmail.com").build()
