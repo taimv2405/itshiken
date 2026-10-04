@@ -19,14 +19,18 @@
 
 ### Thứ tự làm và lý do
 
-1. **Refactor thành monolith trước** (Phase 1–7). Toàn bộ bảng nằm ở schema `public`. PDF vẫn đọc từ ổ đĩa như hiện tại.
-2. **Chia schema** (Phase 8): làm trong 1 bước riêng, bằng migration Flyway `V2`.
-   - Tách riêng khỏi refactor để khi có lỗi thì biết ngay lỗi do chuyển code hay do schema.
-   - Thay đổi DB đi qua Flyway thật, và DB tạo mới từ đầu cũng tự chạy V1 rồi V2.
-3. **Mốc tương đương** (bước 8.2): chứng minh monolith cho ra kết quả giống stack cũ. **Trước mốc này không sửa lỗi nào.**
-4. **Sửa lỗi bắt buộc trước deploy** (bước 8.3), mỗi lỗi một bước, có kiểm tra riêng.
-5. **Cloudflare R2** (Phase 9, sau mốc tương đương): độc lập với refactor. Chỉ bắt buộc khi deploy, vì Render không có ổ đĩa lâu dài. Đây là thay đổi hành vi có chủ đích (file trả 302 thay cho 200).
-6. **Deploy** (Phase 10): production khởi động với cấu trúc cuối cùng. Các lỗi còn lại trong "Việc để sau" sửa dần sau khi production ổn định.
+Mỗi việc một nhánh. Nhánh refactor làm trước; các nhánh sau đều tạo từ `main` **sau khi** refactor đã merge.
+
+| Thứ tự | Nhánh | Phase | Nội dung |
+|---|---|---|---|
+| 1 | `refactor/monolith` (nhánh hiện tại) | 0–7 | Refactor thuần, giữ nguyên hành vi 100%. Mọi bảng ở schema `public`, PDF vẫn đọc từ ổ đĩa. Kết thúc bằng **mốc tương đương** (7.2), dọn microservice (7.3), tài liệu (7.4), merge (7.5) |
+| 2 | `refactor/db-schemas` | 8 | Chia schema bằng migration Flyway `V2`. Vẫn giữ nguyên hành vi, so baseline |
+| 3 | `fix/x-user-id-spoofing` | F1 | Sửa lỗi đầu tiên, bắt buộc trước deploy |
+| 4 | `feature/r2-materials` | 9 | PDF lên Cloudflare R2. Thay đổi hành vi có chủ đích (file trả 302 thay cho 200) |
+| 5 | `deploy/render` | 10 | Chỉ merge khi 1–4 đã ở trên `main`, vì Render tự deploy từ `main` |
+| sau | `fix/<tên>` | F2… | Mỗi lỗi trong "Việc để sau" một nhánh, sửa dần sau khi production ổn định |
+
+Nhánh 2, 3, 4 không phụ thuộc nhau về code nên làm song song được. Nên merge 2 trước 4, vì bước 9.3 truy vấn `material.learning_materials` (tên có schema).
 
 ### Quyết định đã chốt
 - **Modular monolith**: các module `common`, `identity` (auth + user gộp lại), `exam`, `material`, `ai`, và `app` (module duy nhất có main class).
@@ -43,7 +47,7 @@
   - Khi cần ingest thì script tải PDF từ R2 về `BE/.materials-cache/` (đã gitignore).
   - Lịch sử git vẫn còn 82MB, không viết lại lịch sử.
   - **Bạn nên giữ thêm một bản sao lưu** (zip lên Drive).
-- Làm trên nhánh `refactor/monolith`, merge vào `main` khi xong. Render tự deploy từ `main`.
+- Mỗi việc một nhánh (xem bảng "Thứ tự làm và lý do"). Render tự deploy từ `main`, nên chỉ merge `deploy/render` khi mọi nhánh cần thiết đã vào `main`.
 
 ### Hợp đồng với FE (không được phá)
 1. Response JSON được bọc: `{success, statusCode, message, data, path, timestamp, responseTime}`. FE luôn đọc `.data`.
@@ -57,7 +61,7 @@
 ### Hành vi của gateway mà monolith phải tự làm (nguồn: `api_gateway/src/main/...`)
 - **JWT**: đọc cookie `access_token` rồi gắn header `X-User-Id` xuống controller. Token sai hoặc thiếu thì đi tiếp như ẩn danh, **trừ** các protected path thì trả 401.
   - Gateway **bỏ qua** request `OPTIONS` và các path `/api/auth/**`, `/actuator/**` (không xử lý JWT gì cả).
-  - Token hợp lệ: gán đè `X-User-Id`. Token sai hoặc thiếu: **giữ nguyên** `X-User-Id` client tự gửi (lỗ hổng có sẵn, giữ nguyên cho tới bước 8.3).
+  - Token hợp lệ: gán đè `X-User-Id`. Token sai hoặc thiếu: **giữ nguyên** `X-User-Id` client tự gửi (lỗ hổng có sẵn, giữ nguyên cho tới bước F1).
   - Protected path: `GET /api/users/me`, `POST /api/exams`, `PUT|DELETE /api/exams/**`, `POST /api/exams/*/submit`, `POST /api/exams/*/rating`, `GET /api/attempts/me/**`, `POST /api/materials`, `PUT|DELETE /api/materials/**`.
   - Body 401: message `"Bạn chưa đăng nhập hoặc phiên đăng nhập đã hết hạn"`.
 - **Envelope** (`ResponseWrapperFilter.java`): chỉ bọc khi content-type là JSON; bỏ qua `/actuator`.
@@ -74,9 +78,9 @@
 - Bỏ hẳn, không làm lại: Eureka, load balancer, circuit breaker, retry, warmup scheduler.
 
 ### Nguyên tắc: refactor phải giữ nguyên hành vi 100%
-- Từ Phase 1 tới hết Phase 8, mọi request phải cho ra **cùng status, cùng body, cùng header** như stack cũ. Kể cả các lỗi có sẵn: phải giữ nguyên lỗi.
+- Trên nhánh `refactor/monolith` (Phase 1–7) và `refactor/db-schemas` (Phase 8), mọi request phải cho ra **cùng status, cùng body, cùng header** như stack cũ. Kể cả các lỗi có sẵn: phải giữ nguyên lỗi.
 - Thấy chỗ nào muốn sửa cho đúng: **chỉ ghi vào mục "Việc để sau"** ở cuối plan (ghi file, hiện tượng, cách sửa đề xuất). **Không sửa ngay.**
-- Chỉ bắt đầu sửa sau **mốc tương đương** (bước 8.2), tức là khi đã chứng minh hai bản cho ra kết quả giống nhau. Mỗi lần sửa một việc, có kiểm tra riêng. Như vậy hỏng ở đâu thì biết ngay là do việc sửa đó, không lẫn với refactor.
+- Chỉ bắt đầu sửa sau **mốc tương đương** (bước 7.2), tức là khi đã chứng minh hai bản cho ra kết quả giống nhau, và **trên nhánh `fix/*` riêng** (Phase F). Mỗi nhánh sửa một việc, có kiểm tra riêng. Như vậy hỏng ở đâu thì biết ngay là do việc sửa đó, không lẫn với refactor.
 - Chỉ những khác biệt trong danh sách dưới đây là được phép, vì không thể giữ khi bỏ gateway hoặc gộp process. Gặp khác biệt nào ngoài danh sách thì **dừng và báo**.
 
 ### Khác biệt bắt buộc (không tránh được, đã chấp nhận)
@@ -146,10 +150,10 @@ Quy ước chạy:
 - **Máy này không có `mvn`/`java` trên PATH.** Chạy Maven bằng wrapper (PowerShell, đứng ở `BE/`):
   `$env:PATH = "$env:JAVA_HOME\bin;$env:PATH"; .\exam-service\mvnw.cmd -f pom.xml <goals>`.
   - Sau bước 6.1 đường dẫn wrapper thành `.\exam\mvnw.cmd`.
-  - Bước 10.2 sẽ đưa wrapper ra `BE/`.
+  - Bước 7.3 sẽ đưa wrapper ra `BE/`.
   - Trong plan, chỗ nào ghi `mvn ...` thì hiểu là lệnh wrapper này.
 - `JAVA_HOME` là **JDK 25**, còn Docker build dùng JDK 21. Từ JDK 23, Lombok **chỉ chạy** khi pom khai báo `annotationProcessorPaths`, nên mọi module dùng Lombok phải có cấu hình này.
-- `BE/CLAUDE.md` hiện chỉ là bản tạm trỏ về plan này; bước 10.3 sẽ viết lại. Các tài liệu kiến trúc microservice cũ đã bị xoá (vẫn còn trong git history). Nếu gặp tài liệu nào mâu thuẫn với plan thì **tin plan**.
+- `BE/CLAUDE.md` hiện chỉ là bản tạm trỏ về plan này; bước 7.4 sẽ viết lại. Các tài liệu kiến trúc microservice cũ đã bị xoá (vẫn còn trong git history). Nếu gặp tài liệu nào mâu thuẫn với plan thì **tin plan**.
 - Chạy app local gồm 2 lệnh:
   1. `mvn -q -pl app -am install -DskipTests` (build app và các module nó phụ thuộc, cài vào `~/.m2`);
   2. `mvn -q -pl app spring-boot:run`.
@@ -380,7 +384,7 @@ Quy ước chạy:
 - Commit: `feat(common): add api response envelope and request logging`.
 
 ### [x] 4.2 Security: JWT filter, protected path, CORS, header
-> **Sửa lại ở 4.3:** không xoá `X-User-Id` của client (việc đó dời sang 8.3), header của material phải giống `material_service` cũ, CORS chọn origin như profile của gateway.
+> **Sửa lại ở 4.3:** không xoá `X-User-Id` của client (việc đó dời sang F1), header của material phải giống `material_service` cũ, CORS chọn origin như profile của gateway.
 - Model: Sonnet. Nhờ Opus review.
 - Làm:
   - `common`: thêm `spring-boot-starter-security`, `jjwt-api` và `jjwt-impl`/`jjwt-jackson` (runtime).
@@ -408,7 +412,7 @@ Quy ước chạy:
 
 ### [ ] 4.3 Gỡ các thay đổi hành vi đã làm ở 4.1 và 4.2
 - Model: Sonnet. Nhờ Opus review.
-- Bối cảnh: theo nguyên tắc "giữ nguyên hành vi 100%" (phần Context), 4 chỗ trong code hiện tại đang làm khác gateway cũ. Bước này trả chúng về đúng như cũ. Muốn sửa lỗi thì để tới bước 8.3 hoặc mục "Việc để sau".
+- Bối cảnh: theo nguyên tắc "giữ nguyên hành vi 100%" (phần Context), 4 chỗ trong code hiện tại đang làm khác gateway cũ. Bước này trả chúng về đúng như cũ. Muốn sửa lỗi thì để tới Phase F (nhánh `fix/*`) và ghi vào mục "Việc để sau".
 - Làm:
   1. **`common/.../security/JwtAuthFilter.java`**: làm đúng như `api_gateway/.../filter/JwtAuthGatewayFilter.java`:
      - request `OPTIONS` và path khớp `/api/auth/**` hoặc `/actuator/**`: đi tiếp **nguyên trạng**, không đọc cookie, không đụng header;
@@ -555,10 +559,59 @@ Quy ước chạy:
   - `curl -N "localhost:8080/api/coach/node/<topicId>/explain/stream?userId=<id>"` trả event SSE từng phần, không bị bọc.
   - So với baseline kịch bản `analysis`: body giống hệt, **kể cả thứ tự key** trong mỗi node.
   - Chạy với `INGEST_ENABLED=true`: `GET /api/ai/admin/ingest/status` trả 200 (**không** gọi POST ingest).
-  - **Cuối phase**: chạy FE local (`npm run dev`) trỏ vào monolith và đi hết luồng người dùng: đăng ký, đăng nhập, xem đề, làm bài, lịch sử, tài liệu PDF, AI coach. Đây là mốc "refactor xong".
+  - **Cuối phase**: chạy FE local (`npm run dev`) trỏ vào monolith và đi hết luồng người dùng: đăng ký, đăng nhập, xem đề, làm bài, lịch sử, tài liệu PDF, AI coach.
 - Commit: `refactor(ai): move ai service into monolith and call exam in-process`.
 
+### [ ] 7.2 Mốc tương đương 100% (không sửa code)
+- Model: Sonnet.
+- Làm:
+  - Chạy capture trên monolith, so **toàn bộ** kịch bản với `baseline/microservices`.
+  - Mọi khác biệt phải nằm trong bảng "Khác biệt bắt buộc" (phần Context), hoặc là id, email, số liệu attempt/rating của user test.
+  - Bạn tự đi lại các luồng trên FE local như ở 0.3, so với những gì đã ghi trong `baseline/README.md`. Các luồng hỏng sẵn ở stack cũ thì phải **hỏng y như cũ**.
+- Kiểm tra: không còn khác biệt nào ngoài danh sách. Nếu còn thì **dừng** và sửa phần refactor cho khớp, không sửa theo hướng "cho đúng".
+- Ghi kết quả (ngày chạy, số kịch bản khớp) vào đầu bước này.
+- Commit: `test: confirm monolith matches microservice baseline` (chỉ cập nhật plan).
+
+### [ ] 7.3 Xoá phần microservice còn sót
+- Model: Haiku.
+- Điều kiện: 7.2 đã pass. Từ đây không cần chạy lại stack cũ trên nhánh này nữa; nếu cần thì chạy từ tag `pre-monolith` (bước 7.5).
+- Làm:
+  - `git rm -r api_gateway discovery_server`.
+  - Xoá:
+    - các Dockerfile cũ trong module;
+    - `BE/docker-compose.yml`;
+    - `.github/workflows/deploy.yml` (deploy qua SSH lên VPS Contabo đã chết; giữ lại thì mỗi lần merge vào `main` sẽ có một job lỗi);
+    - `BE/.env.example` cũ (biến của từng service trên VPS). Bản mới là `BE/app/.env.example`.
+  - `git mv exam/mvnw exam/mvnw.cmd exam/.mvn` ra `BE/`, rồi xoá wrapper trong các module khác.
+  - Parent pom:
+    - modules chỉ còn `common, identity, exam, material, ai, app`;
+    - bỏ BOM `spring-cloud-dependencies` và repository `spring-milestones` nếu không còn dùng (grep `spring-cloud` để chắc).
+  - Thêm `.github/workflows/ci.yml`: trên `pull_request` và `push`, setup JDK 21, chạy `mvn -B package` trong `BE/`.
+    - Dùng `mvn` có sẵn trên runner Ubuntu, **không** dùng `./mvnw`: file `mvnw` lưu trong git với mode `100644` (không có quyền thực thi), chạy trên Linux sẽ bị "Permission denied".
+- Kiểm tra:
+  - `.\mvnw.cmd -q clean package` ở `BE/` pass (có chạy test).
+  - `grep -rE --exclude-dir=docs "eureka|feign|lb://|contabo" BE .github` không còn kết quả.
+  - Chạy lại capture: vẫn giống kết quả 7.2.
+- Commit: `chore: remove gateway, discovery server and vps deployment`.
+
+### [ ] 7.4 Tài liệu kiến trúc monolith
+- Model: Sonnet.
+- Làm (chỉ mô tả những gì **đang có trên nhánh này**; schema, R2 và deploy do nhánh của chúng tự bổ sung tài liệu):
+  - Viết lại `BE/CLAUDE.md` (thay bản tạm): các module, hợp đồng envelope và JWT, protected path, cách chạy local, env, nguyên tắc "sửa lỗi theo từng nhánh `fix/*`".
+  - Nếu cần, thêm `BE/ai/README.md` ngắn mô tả RAG và AI coach (bản cũ đã bị xoá vì sai), kèm quy trình **ingest local**: chạy app với `INGEST_ENABLED=true`, `RAG_SOURCE_PATH` trỏ vào thư mục PDF, gọi `POST localhost:8080/api/ai/admin/ingest`. Request chạy lâu, dùng curl với timeout lớn.
+  - Ghi quy tắc **migration mới**: file `V<n>__<mô tả>.sql` trong `app/src/main/resources/db/migration`.
+  - Sửa phần backend trong `README.md` ở gốc repo: bỏ khung cảnh báo "đang refactor", mô tả monolith. Phần deploy ghi "chưa deploy, xem plan Phase 10".
+- Commit: `docs: describe modular monolith backend`.
+
+### [ ] 7.5 Merge nhánh refactor vào `main` (bạn làm)
+- Làm:
+  - **Trước khi merge**, gắn tag cho bản microservice cuối cùng trên `main`: `git tag pre-monolith main && git push origin pre-monolith`. Sau này cần chạy lại stack cũ (chụp lại baseline) thì `git worktree add ../itshiken-old pre-monolith`.
+  - Mở PR `refactor/monolith` → `main`, chờ CI xanh, merge.
+  - Lúc này **chưa** có gì được deploy: VPS cũ đã chết, Render chưa tạo (Phase 10). Production vẫn như hiện tại.
+- Kiểm tra: `main` build xanh trên CI. Các nhánh sau đều tạo từ `main` mới này.
+
 ## Phase 8 — Chia schema theo module
+> **Nhánh `refactor/db-schemas`**, tạo từ `main` sau bước 7.5: `git checkout main && git pull && git checkout -b refactor/db-schemas`. Vẫn là refactor giữ nguyên hành vi, nên vẫn so baseline.
 
 ### [ ] 8.1 Migration V2 chuyển bảng sang schema, sửa entity và native query
 - Model: Sonnet. Nhờ Opus review.
@@ -583,32 +636,13 @@ Quy ước chạy:
   - `\dt public.*` chỉ còn `flyway_schema_history`. Count không đổi.
   - Chạy lại các curl kiểm tra của 5.4, 6.1 và 7.1, tất cả phải pass.
   - **DB trống**: tạo tạm `itshiken_tmp`, trỏ `DB_URL` vào đó và khởi động app. Flyway chạy V1 rồi V2 không lỗi, bảng nằm đúng schema. Xong thì xoá DB tạm.
+  - Chạy capture, so **toàn bộ** kịch bản: phải giống kết quả 7.2.
+  - `BE/CLAUDE.md`: thêm bảng phân schema, và quy tắc "tên bảng trong migration và native query luôn ghi kèm schema".
 - Commit: `refactor(db): split tables into per-module schemas`.
-
-### [ ] 8.2 Mốc tương đương 100% (không sửa code)
-- Model: Sonnet.
-- Làm:
-  - Chạy capture trên monolith, so **toàn bộ** kịch bản với `baseline/microservices`.
-  - Mọi khác biệt phải nằm trong bảng "Khác biệt bắt buộc" (phần Context) hoặc là id, email, số liệu attempt/rating của user test.
-  - Bạn tự đi lại các luồng trên FE local như ở 0.3, so với những gì đã ghi ở `baseline/README.md`. Các luồng hỏng sẵn ở stack cũ thì phải **hỏng y như cũ**.
-- Kiểm tra: không còn khác biệt nào ngoài danh sách. Nếu còn thì **dừng**, sửa phần refactor cho khớp, không sửa sang hướng "cho đúng".
-- Ghi kết quả (ngày chạy, số kịch bản khớp) vào đầu bước này.
-- Commit: `test: confirm monolith matches microservice baseline` (chỉ cập nhật plan).
-
-### [ ] 8.3 Sửa lỗ hổng giả mạo `X-User-Id` (sửa lỗi đầu tiên, bắt buộc trước khi deploy)
-- Model: Sonnet.
-- Điều kiện: bước 8.2 đã pass.
-- Lý do làm trước deploy: lỗ hổng này cho phép đọc rating của người khác bằng cách tự gửi header, và cũng có trên production cũ.
-- Làm:
-  - `JwtAuthFilter`: với **mọi** request đi qua filter (kể cả token sai hoặc thiếu), bọc request để xoá `X-User-Id` client gửi; token hợp lệ thì gắn lại từ JWT.
-  - `baseline/README.md`: chuyển `spoof-x-user-id` vào mục "Khác biệt do sửa lỗi" (tạo mới), ghi rõ bước 8.3.
-  - Xoá mục tương ứng trong "Việc để sau".
-- Kiểm tra:
-  - Kịch bản `spoof-x-user-id`: không còn trả rating của user 1.
-  - Mọi kịch bản khác vẫn giống bước 8.2.
-- Commit: `fix(security): drop client-supplied X-User-Id header`.
+- Xong thì mở PR `refactor/db-schemas` → `main`, CI xanh thì merge.
 
 ## Phase 9 — PDF lên Cloudflare R2 (`files.itshiken.app`)
+> **Nhánh `feature/r2-materials`**, tạo từ `main` (sau 7.5; nên sau cả Phase 8 để bước 9.3 đọc được `material.learning_materials`). Đây là **thay đổi hành vi có chủ đích**: file tài liệu trả 302 thay cho 200. Ngoài kịch bản file, mọi kịch bản baseline khác phải giữ nguyên. Bước 9.1 và 9.2 làm tay trên Cloudflare, làm sớm lúc nào cũng được.
 
 Lý do chọn R2:
 - Vercel Blob **luôn** gắn `x-frame-options: DENY` cho file public, nên iframe ở `FE/src/views/MaterialDetail.tsx:81` sẽ trống.
@@ -708,9 +742,15 @@ Nút **tải xuống**: R2 không có tham số kiểu `?download=1`, và presig
   - App vẫn chạy.
   - `/api/materials/<id>/file` vẫn 302 tới `files.itshiken.app`.
   - `git ls-files | grep -c Material_Data` ra `0`.
+  - Tài liệu (`BE/CLAUDE.md` hoặc `BE/material/README.md`):
+    - quy trình **thêm tài liệu mới**: (1) upload PDF bằng `tools/materials-sync upload`; nếu ghi đè file cũ cùng tên thì vào Cloudflare → Caching → **Purge** URL đó, vì Cloudflare cache file PDF; (2) thêm dòng vào `material.learning_materials` với `file_url = /Material_Data/...`; (3) muốn AI dùng được tài liệu đó thì ingest local;
+    - quy trình **ingest local**: chạy `sync.mjs download --out BE/.materials-cache` trước, rồi làm như hướng dẫn ở 7.4.
+  - `baseline/README.md`: thêm kịch bản `HEAD /api/materials/<id>/file` vào mục "Khác biệt có chủ đích", ghi rõ Phase 9.
 - Commit: `chore(material): remove material files from git, Cloudflare R2 is the source`.
+- Xong thì mở PR `feature/r2-materials` → `main`, CI xanh thì merge.
 
 ## Phase 10 — Deploy free và dọn dẹp
+> **Nhánh `deploy/render`**, tạo từ `main`. **Điều kiện trước khi merge nhánh này** (vì Render tự deploy khi `main` có `render.yaml`): `main` đã có `refactor/monolith`, `refactor/db-schemas`, `feature/r2-materials` và `fix/x-user-id-spoofing` (bước F1).
 
 ### [ ] 10.1 Dockerfile cho Render
 - Model: Sonnet.
@@ -733,49 +773,21 @@ Nút **tải xuống**: R2 không có tham số kiểu `?download=1`, và presig
   - Ghi lại thời gian khởi động.
 - Commit: `build: add render deployment for monolith`.
 
-### [ ] 10.2 Xoá phần microservice và VPS còn sót
-- Model: Haiku.
-- Làm:
-  - `git rm -r api_gateway discovery_server`.
-  - Xoá:
-    - các Dockerfile cũ trong module;
-    - `BE/docker-compose.yml`;
-    - `.github/workflows/deploy.yml` (deploy qua SSH lên Contabo);
-    - `BE/.env.example` cũ (biến của từng service trên VPS). Bản mới là `BE/app/.env.example`.
-  - `git mv exam/mvnw exam/mvnw.cmd exam/.mvn` ra `BE/`, rồi xoá wrapper trong các module khác.
-  - Parent pom:
-    - modules chỉ còn `common, identity, exam, material, ai, app`;
-    - bỏ BOM `spring-cloud-dependencies` và repository `spring-milestones` nếu không còn dùng (grep `spring-cloud` để chắc).
-  - Thêm `.github/workflows/ci.yml`: trên `pull_request` và `push`, setup JDK 21, chạy `mvn -B package` trong `BE/`.
-    - Dùng `mvn` có sẵn trên runner Ubuntu, **không** dùng `./mvnw`: file `mvnw` lưu trong git với mode `100644` (không có quyền thực thi), chạy trên Linux sẽ bị "Permission denied".
-    - Render tự deploy, CI chỉ để bắt lỗi build.
-- Kiểm tra:
-  - `.\mvnw.cmd -q clean package` ở `BE/` pass (có chạy test).
-  - `grep -rE --exclude-dir=docs "eureka|feign|lb://|contabo" BE .github` không còn kết quả.
-- Commit: `chore: remove gateway, discovery server and vps deployment`.
+### [ ] 10.2 (đã chuyển) Xoá phần microservice
+> Đã chuyển sang bước 7.3, trên nhánh refactor.
 
-### [ ] 10.3 Cập nhật tài liệu
+### [ ] 10.3 Tài liệu deploy
 - Model: Sonnet.
-- Làm:
-  - Viết lại `BE/CLAUDE.md` (thay bản tạm hiện tại) theo kiến trúc mới: module, schema, hợp đồng envelope và JWT, protected path, cách chạy local, env.
-  - Nếu cần, thêm `BE/ai/README.md` ngắn mô tả RAG và AI coach. Bản cũ đã bị xoá vì sai.
-  - Ghi quy trình **thêm tài liệu mới**:
-    1. upload PDF bằng `tools/materials-sync upload`. Nếu ghi đè file cũ cùng tên thì vào Cloudflare → Caching → **Purge** URL đó, vì Cloudflare cache file PDF;
-    2. thêm dòng `material.learning_materials` với `file_url = /Material_Data/...`;
-    3. nếu muốn AI dùng được tài liệu đó thì ingest local.
-  - Ghi quy trình **ingest local**:
-    1. `sync.mjs download --out BE/.materials-cache`;
-    2. chạy app với `INGEST_ENABLED=true`;
-    3. gọi `POST localhost:8080/api/ai/admin/ingest`. Request chạy lâu, nên dùng curl với timeout lớn.
-  - Ghi quy tắc **migration mới**: file `V<n>__<mô tả>.sql` trong `app/src/main/resources/db/migration`, tên bảng luôn ghi kèm schema.
-  - Ghi cách deploy: Render và Vercel.
-  - Sửa phần backend trong `README.md` ở gốc repo (hiện vẫn mô tả 7 service và docker compose).
-- Commit: `docs: describe modular monolith backend`.
+- Làm: trong `BE/CLAUDE.md` và `README.md` gốc, thay dòng "chưa deploy" (từ 7.4) bằng cách deploy thật:
+  - Render: blueprint `render.yaml`, danh sách env, health check, giới hạn gói free (ngủ sau 15 phút, 512MB);
+  - Vercel: env `BE_URL`;
+  - lưu ý không tắt `Cache-Control: no-store` của Spring Security (xem 4.2).
+- Commit: `docs: describe render and vercel deployment`.
 
 ### [ ] 10.4 Deploy backend lên Render (bạn làm, model hướng dẫn)
 - Model: Haiku (hướng dẫn).
 - Làm:
-  - Merge PR `refactor/monolith` → `main`.
+  - Kiểm tra đủ điều kiện ở đầu Phase 10, rồi merge PR `deploy/render` → `main`.
   - Trên Render chọn **New → Blueprint**, trỏ vào repo, rồi nhập các env có `sync: false`. `ALLOWED_ORIGINS` là domain FE trên Vercel.
 - Kiểm tra:
   - Deploy xanh.
@@ -807,13 +819,36 @@ Nút **tải xuống**: R2 không có tham số kiểu `?download=1`, và presig
 
 ---
 
+## Phase F — Sửa lỗi có sẵn (mỗi lỗi một nhánh `fix/*`)
+
+Quy trình chung cho **mỗi** lỗi trong mục "Việc để sau":
+1. Tạo nhánh từ `main` mới nhất: `git checkout -b fix/<tên-ngắn>`.
+2. Chỉ sửa đúng lỗi đó. Thấy lỗi khác thì ghi thêm vào "Việc để sau", không sửa chung.
+3. Chạy capture, so với baseline: **chỉ** kịch bản liên quan được đổi, mọi kịch bản khác giữ nguyên. Ghi kịch bản đổi vào mục "Khác biệt do sửa lỗi" trong `baseline/README.md`, kèm tên nhánh.
+4. Xoá mục đó khỏi "Việc để sau", rồi PR → `main`.
+
+### [ ] F1 Sửa lỗ hổng giả mạo `X-User-Id` (bắt buộc trước Phase 10)
+- Nhánh: `fix/x-user-id-spoofing`.
+- Model: Sonnet.
+- Điều kiện: `refactor/monolith` đã merge (bước 7.5).
+- Lý do làm trước deploy: tự gửi header là đọc được rating của người khác. Lỗ hổng này cũng có trên production cũ.
+- Làm:
+  - `JwtAuthFilter`: với **mọi** request đi qua filter (kể cả token sai hoặc thiếu), bọc request để xoá `X-User-Id` client gửi; token hợp lệ thì gắn lại từ JWT. Path bị gateway bỏ qua (`OPTIONS`, `/api/auth/**`, `/actuator/**`) cũng xoá header.
+  - `baseline/README.md`: chuyển `spoof-x-user-id` vào mục "Khác biệt do sửa lỗi".
+- Kiểm tra:
+  - Kịch bản `spoof-x-user-id`: không còn trả rating của user 1.
+  - Mọi kịch bản khác giống kết quả trên `main` trước khi sửa.
+- Commit: `fix(security): drop client-supplied X-User-Id header`.
+
+---
+
 ## Verification tổng
 - Bước 0.2 và 0.3: chạy stack cũ và chụp baseline. Đây là chuẩn để so sánh cho mọi bước sau.
 - Sau mỗi bước: `mvn -q -pl app -am package -DskipTests`, rồi khởi động app và curl theo phần Kiểm tra của bước đó. Từ 4.1 trở đi, so thêm với baseline.
 - Cuối Phase 7: chạy FE local trỏ vào monolith local và đi hết luồng người dùng.
 - Bước 8.1: chạy lại toàn bộ curl và thử dựng DB trống từ V1 + V2.
-- Bước 8.2 (**mốc tương đương**): **toàn bộ** kịch bản baseline phải khớp, chỉ được khác ở bảng "Khác biệt bắt buộc".
-- Bước 8.3 trở đi: mỗi việc sửa lỗi là một bước riêng. So lại baseline để chắc chỉ kịch bản liên quan thay đổi.
+- Bước 7.2 (**mốc tương đương**): **toàn bộ** kịch bản baseline phải khớp, chỉ được khác ở bảng "Khác biệt bắt buộc".
+- Phase F: mỗi nhánh `fix/*` so lại baseline, để chắc chỉ kịch bản liên quan thay đổi.
 - Bước 10.1: chạy container giới hạn 512MB, mô phỏng Render.
 - Bước 10.5: kiểm thử trên domain thật.
 
@@ -824,17 +859,17 @@ Nút **tải xuống**: R2 không có tham số kiểu `?download=1`, và presig
 1. **Lên kế hoạch (Opus, đã xong)**: plan nằm ở `BE/docs/MONOLITH_PLAN.md`, session nào cũng đọc được.
 2. **Đổi model để thực thi**: gõ `/model` và chọn **Sonnet**. Đây là mặc định nên dùng, vì Spring Boot 4 có nhiều chỗ đổi tên mà Haiku dễ đoán sai. Chỉ dùng **Haiku** cho các bước đánh dấu Haiku.
 3. **Mỗi bước một session sạch**: gõ `/clear` trước mỗi bước. Rồi dán prompt mẫu:
-   > Đọc `BE/docs/MONOLITH_PLAN.md`. Chỉ thực hiện **bước X.Y**: làm đúng mục "Làm", chạy mục "Kiểm tra", nếu pass thì commit đúng message ghi trong bước, đánh dấu `[x]` cạnh bước đó trong file plan. Sau đó DỪNG và báo cáo kết quả kiểm tra. Nếu gặp tình huống plan không lường trước (lỗi compile lạ, plan mâu thuẫn với code), **dừng và hỏi**, không tự thiết kế lại. Trước bước 8.3, **không sửa bất kỳ lỗi nào của code cũ**, kể cả khi thấy rõ là sai: chỉ ghi vào mục "Việc để sau".
+   > Đọc `BE/docs/MONOLITH_PLAN.md`. Chỉ thực hiện **bước X.Y**: làm đúng mục "Làm", chạy mục "Kiểm tra", nếu pass thì commit đúng message ghi trong bước, đánh dấu `[x]` cạnh bước đó trong file plan. Sau đó DỪNG và báo cáo kết quả kiểm tra. Nếu gặp tình huống plan không lường trước (lỗi compile lạ, plan mâu thuẫn với code), **dừng và hỏi**, không tự thiết kế lại. Trên nhánh `refactor/*`, **không sửa bất kỳ lỗi nào của code cũ**, kể cả khi thấy rõ là sai: chỉ ghi vào mục "Việc để sau".
 4. **Review**: bạn tự kiểm tra (curl, FE). Với các bước có ghi "nhờ Opus review" (1.4, 4.1, 4.2, 8.1), chạy `/model` → Opus, `/clear`, rồi nhờ: "Review commit HEAD so với bước X.Y trong `BE/docs/MONOLITH_PLAN.md`, chỉ ra chỗ sai lệch".
 5. **Khi model rẻ bị kẹt** quá 2 lần ở cùng một lỗi: đổi sang Opus cho riêng lỗi đó, sửa xong thì đổi lại.
 
 ---
 
-## Việc để sau (chỉ làm sau mốc 8.2; mục ghi "trước deploy" thì làm trước Phase 10)
+## Việc để sau (sửa ở Phase F, mỗi mục một nhánh `fix/*`; mục ghi "trước deploy" thì làm trước Phase 10)
 
-Đây là các lỗi **có sẵn ở stack cũ**, được giữ nguyên trong lúc refactor theo nguyên tắc "giữ nguyên hành vi 100%". Mỗi mục sửa trong **một bước riêng**, sau mốc 8.2, và so lại baseline. Ai thấy lỗi mới trong lúc làm thì ghi thêm vào đây, không sửa ngay.
+Đây là các lỗi **có sẵn ở stack cũ**, được giữ nguyên trong lúc refactor theo nguyên tắc "giữ nguyên hành vi 100%". Mỗi mục sửa trên **một nhánh `fix/*` riêng** theo quy trình ở Phase F, sau mốc 7.2. Ai thấy lỗi mới trong lúc làm thì ghi thêm vào đây, không sửa ngay.
 
-- **[bắt buộc trước deploy → bước 8.3] Giả mạo `X-User-Id`**: `JwtAuthFilter` (giống gateway cũ) giữ header client gửi khi không có token hợp lệ, nên tự gửi `X-User-Id` là đọc được rating của người khác (`GET /api/exams/<id>/rating`).
+- **[bắt buộc trước deploy → F1] Giả mạo `X-User-Id`**: `JwtAuthFilter` (giống gateway cũ) giữ header client gửi khi không có token hợp lệ, nên tự gửi `X-User-Id` là đọc được rating của người khác (`GET /api/exams/<id>/rating`).
 - **Lỗi user trả HTTP 200**: `identity/.../user/exception/UserExceptionHandler` trả `ErrorResponse` với status 200, `GlobalResponseInterceptor` bọc thành `{"Success": false, ...}` (chữ S hoa), nên envelope ngoài cùng ghi `success:true`. Sửa: trả status thật, rồi bỏ lớp bọc riêng của user (`GlobalResponseInterceptor`, `RequestTimeInterceptor`, `WebConfig`).
 - **Đăng ký không nguyên tử**: `AuthServiceImpl.register` tạo user rồi mới lưu credential, 2 lần commit riêng. Lưu credential lỗi thì để lại user mồ côi. Sửa: `@Transactional`.
 - **Kiểm tra trùng theo tên, không theo email**: `UserService.createUser` kiểm tra `existsByName` và ném `RuntimeException` (thành 500). Sửa: kiểm tra theo email (auth đã kiểm tra email trong `credentials`), trả 409.
