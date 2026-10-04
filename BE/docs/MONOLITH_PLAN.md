@@ -534,7 +534,7 @@ Quy ước chạy:
 
 ## Phase 7 — AI
 
-### [ ] 7.1 ai-service → `ai`, gọi exam trực tiếp
+### [x] 7.1 ai-service → `ai`, gọi exam trực tiếp
 - Model: Sonnet.
 - Làm:
   - `git mv ai-service ai`. Package `com.edu.ai` giữ nguyên.
