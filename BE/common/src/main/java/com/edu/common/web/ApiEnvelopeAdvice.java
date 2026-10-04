@@ -3,6 +3,8 @@ package com.edu.common.web;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.core.MethodParameter;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.StringHttpMessageConverter;
@@ -24,6 +26,7 @@ import java.time.Instant;
  * Replaces the gateway's ResponseWrapperFilter.
  */
 @RestControllerAdvice
+@Order(Ordered.LOWEST_PRECEDENCE)
 public class ApiEnvelopeAdvice implements ResponseBodyAdvice<Object> {
 
     private static final String ERROR_URI_ATTR = "jakarta.servlet.error.request_uri";

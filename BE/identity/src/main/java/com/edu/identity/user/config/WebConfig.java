@@ -12,7 +12,7 @@ public class WebConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
 
         registry.addInterceptor(new RequestTimeInterceptor())
-                .addPathPatterns("/**"); // áp dụng cho mọi API
+                .addPathPatterns("/api/users/**");
 
     }
 }
