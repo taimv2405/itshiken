@@ -339,7 +339,7 @@ Quy ước chạy:
 
 ## Phase 4 — Hạ tầng chung thay cho gateway
 
-### [ ] 4.1 Module `common` và envelope response
+### [x] 4.1 Module `common` và envelope response
 - Model: Sonnet. Đây là hợp đồng với FE, nên nhờ Opus review.
 - Làm:
   - Tạo module `common` (package `com.edu.common`, packaging jar). Dependency: `spring-boot-starter-webmvc`, lombok.
