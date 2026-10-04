@@ -1,6 +1,6 @@
-package com.edu.user_service.exception;
+package com.edu.identity.user.exception;
 
-import com.edu.user_service.dto.ErrorResponse;
+import com.edu.identity.user.dto.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -10,8 +10,8 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
-@RestControllerAdvice
-public class GlobalExceptionHandler {
+@RestControllerAdvice(basePackages = "com.edu.identity.user")
+public class UserExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ErrorResponse handleException(

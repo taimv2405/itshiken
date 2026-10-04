@@ -1,9 +1,9 @@
-package com.edu.user_service.controller;
+package com.edu.identity.user.controller;
 
-import com.edu.user_service.dto.CreateUserRequest;
-import com.edu.user_service.dto.UserProfileDto;
-import com.edu.user_service.entity.User;
-import com.edu.user_service.service.UserService;
+import com.edu.identity.user.dto.CreateUserRequest;
+import com.edu.identity.user.dto.UserProfileDto;
+import com.edu.identity.user.entity.User;
+import com.edu.identity.user.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
