@@ -1,4 +1,4 @@
-package com.edu.user_service.interceptor;
+package com.edu.identity.user.interceptor;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;

@@ -1,8 +1,8 @@
-package com.edu.user_service.service;
+package com.edu.identity.user.service;
 
-import com.edu.user_service.dto.CreateUserRequest;
-import com.edu.user_service.entity.User;
-import com.edu.user_service.repository.UserRepository;
+import com.edu.identity.user.dto.CreateUserRequest;
+import com.edu.identity.user.entity.User;
+import com.edu.identity.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

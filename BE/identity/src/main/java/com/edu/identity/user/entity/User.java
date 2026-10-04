@@ -1,4 +1,4 @@
-package com.edu.user_service.entity;
+package com.edu.identity.user.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
