@@ -362,7 +362,7 @@ Quy ước chạy:
 
 ## Phase 4 — Hạ tầng chung thay cho gateway
 
-### [ ] 4.1 Module `common` và envelope response
+### [x] 4.1 Module `common` và envelope response
 > **Sửa lại ở 4.3:** `RequestTimingFilter` không được gắn `X-Request-Id` vào response (gateway cũ không làm vậy).
 - Model: Sonnet. Đây là hợp đồng với FE, nên nhờ Opus review.
 - Làm:
