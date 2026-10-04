@@ -22,7 +22,7 @@
         <module>app</module>
         <module>identity</module>
         <module>discovery_server</module>
-        <module>exam-service</module>
+        <module>exam</module>
         <module>material</module>
         <module>ai-service</module>
     </modules>
