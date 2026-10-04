@@ -1,8 +1,8 @@
-package com.testwebsite.backend.material.service;
+package com.edu.material.service;
 
-import com.testwebsite.backend.material.dto.LearningMaterialDto;
-import com.testwebsite.backend.material.entity.LearningMaterial;
-import com.testwebsite.backend.material.repository.LearningMaterialRepository;
+import com.edu.material.dto.LearningMaterialDto;
+import com.edu.material.entity.LearningMaterial;
+import com.edu.material.repository.LearningMaterialRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
