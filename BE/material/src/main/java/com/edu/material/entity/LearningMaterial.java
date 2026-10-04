@@ -1,4 +1,4 @@
-package com.testwebsite.backend.material.entity;
+package com.edu.material.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
