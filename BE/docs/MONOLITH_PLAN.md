@@ -160,6 +160,7 @@ Quy ước chạy:
   - **Không** gộp thành `-pl app -am spring-boot:run`: làm vậy Maven chạy goal `run` trên cả các module thư viện và báo lỗi không tìm thấy main class.
   - Port **8080**, khớp `BE_URL=http://localhost:8080` của FE dev.
   - Env đọc từ `BE/app/.env` (đã gitignore nhờ `**/.env`).
+  - IntelliJ: đặt **Working directory** của run configuration là `BE/app`, nếu không sẽ không thấy `.env`.
   - Thư mục làm việc là `BE/app`, nên đường dẫn tương đối trong yaml tính từ đó.
 - Lệnh psql/pg_dump chạy qua `docker run --rm postgres:17 ...`. Dùng `postgres:18` nếu báo lệch version. Chuỗi kết nối dạng `postgresql://user:pass@host/db?sslmode=require`.
   - Dùng host **direct** của Neon (không có `-pooler`), cả cho `DB_URL` của app.
@@ -308,7 +309,10 @@ Quy ước chạy:
 
 ## Phase 2 — Khung app
 
-### [ ] 2.1 Module `app` chạy được, chưa có domain nào
+### [x] 2.1 Module `app` chạy được, chưa có domain nào
+> **Làm khác plan:**
+> - **`spring-dotenv` đổi artifact.** Bản `spring-dotenv:3.0.0` nhắm tới Boot 3 nên trên Boot 4 không nạp `.env` (`${DB_URL}` không được thay). `app/pom.xml` dùng `me.paulschwarz:springboot4-dotenv:5.1.0` (khai báo version trực tiếp). Parent pom nâng bản ghim `spring-dotenv` từ 3.0.0 lên **5.1.0**, vì artifact Boot 4 cần lõi 5.1.0.
+> - **Thêm `spring-boot-starter-cache`** vào `app/pom.xml`. Thiếu nó thì `@EnableCaching` báo thiếu bean `CacheManager`.
 - Model: Sonnet.
 - Làm:
   - Parent `BE/pom.xml`: thêm module `app`. Giữ nguyên các module cũ, xoá dần ở các bước sau.

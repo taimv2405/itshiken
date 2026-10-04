@@ -1,0 +1,62 @@
+server:
+  port: ${PORT:8080}
+  compression:
+    enabled: true
+    mime-types: application/json,text/plain,text/html
+    min-response-size: 1024
+  tomcat:
+    threads:
+      max: 40
+
+spring:
+  application:
+    name: itshiken-backend
+
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 0
+      idle-timeout: 240000
+      max-lifetime: 600000
+      connection-timeout: 15000
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+    open-in-view: true
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        jdbc:
+          batch_size: 50
+          order_inserts: true
+          order_updates: true
+
+  flyway:
+    baseline-on-migrate: true
+    baseline-version: 1
+
+  cache:
+    type: none
+
+  sql:
+    init:
+      mode: never
+
+  mvc:
+    async:
+      request-timeout: 120000
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  health:
+    db:
+      enabled: false
