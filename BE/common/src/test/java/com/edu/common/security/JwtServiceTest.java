@@ -1,13 +1,11 @@
-package com.edu.identity.auth.service;
+package com.edu.common.security;
 
-import com.edu.identity.auth.security.JwtService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
@@ -24,10 +22,7 @@ class JwtServiceTest {
 
     @BeforeEach
     void setUp() {
-        jwtService = new JwtService();
-        ReflectionTestUtils.setField(jwtService, "secret",     TEST_SECRET);
-        ReflectionTestUtils.setField(jwtService, "expiration", TEST_EXPIRATION);
-        jwtService.init();
+        jwtService = new JwtService(TEST_SECRET, TEST_EXPIRATION);
     }
 
     @Test
@@ -54,8 +49,8 @@ class JwtServiceTest {
     }
 
     @Test
-    @DisplayName("generateToken: thời gian hết hạn xấp xỉ 24h từ lúc tạo")
-    void generateToken_thoiGianHetHanDung24h() {
+    @DisplayName("generateToken: thời gian hết hạn đúng theo cấu hình")
+    void generateToken_thoiGianHetHanDungCauHinh() {
         long truocKhiTao = System.currentTimeMillis();
         String token = jwtService.generateToken(1L);
         long sauKhiTao  = System.currentTimeMillis();
@@ -67,6 +62,13 @@ class JwtServiceTest {
                 truocKhiTao + TEST_EXPIRATION - 1_000,
                 sauKhiTao   + TEST_EXPIRATION + 1_000
         );
+    }
+
+    @Test
+    @DisplayName("extractUserIdIfValid: token hợp lệ → trả về userId, token sai → null")
+    void extractUserIdIfValid_hopLeVaSai() {
+        assertThat(jwtService.extractUserIdIfValid(jwtService.generateToken(7L))).isEqualTo("7");
+        assertThat(jwtService.extractUserIdIfValid("not-a-token")).isNull();
     }
 
     private Claims parseToken(String token) {
