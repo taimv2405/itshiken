@@ -4,7 +4,7 @@ import type { Locale } from '@/src/utils/i18n';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://itshiken.io.vn';
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
 const DECK_META: Record<string, { title: string; desc: string; category: string }> = {
     '1': { title: 'Từ vựng IT Passport cơ bản', desc: 'Bộ thẻ từ vựng trọng tâm thi chứng chỉ IT Passport Nhật Bản', category: 'IT Passport' },

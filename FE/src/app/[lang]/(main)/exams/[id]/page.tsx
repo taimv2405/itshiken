@@ -5,7 +5,7 @@ import { getDictionary } from '@/src/utils/dictionaries';
 import type { Locale } from '@/src/utils/i18n';
 import type { Metadata } from 'next';
 import { cache } from 'react';
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://itshiken.io.vn';
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
 const getExamCached = cache(async (id: string) => await  examService.getExamById(id))
 

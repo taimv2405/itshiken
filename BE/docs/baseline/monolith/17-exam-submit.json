@@ -1,0 +1,19 @@
+{
+  "method": "POST",
+  "path": "/api/exams/ap-2025-autumn-morning/submit",
+  "status": 200,
+  "content-type": "application/json",
+  "cache-control": "no-cache, no-store, max-age=0, must-revalidate",
+  "x-frame-options": "SAMEORIGIN",
+  "location": null,
+  "set-cookie": [],
+  "body": {
+    "success": true,
+    "statusCode": 200,
+    "message": "OK",
+    "data": {
+      "attemptId": "cae40f30-8766-4f12-9372-59ff00c40e81"
+    },
+    "path": "/api/exams/ap-2025-autumn-morning/submit"
+  }
+}

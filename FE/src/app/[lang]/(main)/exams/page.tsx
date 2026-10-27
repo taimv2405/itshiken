@@ -5,7 +5,7 @@ import { examService } from '@/src/services/examService';
 import {notFound} from "next/navigation";
 import type { Metadata } from 'next';
 import { cache } from 'react';
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://itshiken.io.vn';
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
 
 const getExamsCached = cache(async () => await examService.getAllExams());

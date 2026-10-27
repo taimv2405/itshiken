@@ -4,7 +4,7 @@ import ContentVi from '@/src/app/[lang]/(main)/blogs/ky-thi-it-passport/content-
 import ContentEn from '@/src/app/[lang]/(main)/blogs/ky-thi-it-passport/content-en';
 import ContentJa from '@/src/app/[lang]/(main)/blogs/ky-thi-it-passport/content-ja';
 
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://itshiken.io.vn';
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
 const commonData = {
     id: 'ky-thi-it-passport',

@@ -13,7 +13,7 @@ export async function GET(
     }
 
     const { topicId } = await params;
-    const beUrl = process.env.BE_URL ?? 'http://62.72.46.7:8080';
+    const beUrl = process.env.BE_URL ?? 'http://localhost:8080';
     const cookie = req.headers.get('cookie') ?? '';
 
     try {

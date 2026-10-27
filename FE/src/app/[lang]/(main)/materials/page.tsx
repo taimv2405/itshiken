@@ -5,7 +5,7 @@ import type { Metadata } from 'next';
 import { cache } from 'react';
 import { materialService } from '@/src/services/materialService';
 
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://itshiken.io.vn';
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
 const getMaterialsCached = cache(async () => {
     try {

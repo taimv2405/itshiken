@@ -3,7 +3,7 @@ import { examService } from '@/src/services/examService';
 import { materialService } from '@/src/services/materialService';
 
 // 1. Thêm fallback để chống lỗi lúc build
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://itshiken.io.vn';
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
 async function getMaterialsLastModified(): Promise<Date> {
     try {

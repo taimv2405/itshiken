@@ -4,7 +4,7 @@ import ContentVi from './content-vi';
 import ContentEn from './content-en';
 import ContentJa from './content-ja';
 
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://itshiken.io.vn';
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'httpư://localhost:3000';
 
 const commonData = {
     id: 'ky-thi-ap',

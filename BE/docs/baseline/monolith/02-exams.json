@@ -1,0 +1,64 @@
+{
+  "method": "GET",
+  "path": "/api/exams",
+  "status": 200,
+  "content-type": "application/json",
+  "cache-control": "no-cache, no-store, max-age=0, must-revalidate",
+  "x-frame-options": "SAMEORIGIN",
+  "location": null,
+  "set-cookie": [],
+  "body": {
+    "success": true,
+    "statusCode": 200,
+    "message": "OK",
+    "data": [
+      {
+        "id": "it-passport-2024",
+        "title": {
+          "en": "IT Passport Exam, Reiwa 6 (2024) edition",
+          "ja": "ITパスポート試験 令和6年度分",
+          "vi": "Đề thi IT Passport đợt năm Reiwa 6 (năm 2024)"
+        },
+        "category": {
+          "id": "it-passport",
+          "name": "IT Passport"
+        },
+        "image": "https://images.unsplash.com/photo-1545569341-9eb8b30979d9?q=80&w=870&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+        "duration": 120,
+        "questionCount": 100,
+        "description": {
+          "en": "Official IT Passport Exam, Reiwa 6 (2024) edition. Includes questions on Strategy (questions 1-35), Management (questions 36-55), and Technology (questions 56-100).",
+          "ja": "ITパスポート試験 令和6年度分。ストラテジ系（問1〜35）、マネジメント系（問36〜55）、テクノロジ系（問56〜100）に関する問題を含みます。",
+          "vi": "Đề thi chính thức kỳ thi IT Passport đợt năm Reiwa 6 (năm 2024). Bao gồm các câu hỏi về Chiến lược (câu 1-35), Quản lý (câu 36-55) và Công nghệ (câu 56-100)."
+        },
+        "participants": 39,
+        "rating": 4.2,
+        "ratingCount": 5
+      },
+      {
+        "id": "it-passport-2025",
+        "title": {
+          "en": "IT Passport Exam, Reiwa 7 (2025) edition",
+          "ja": "ITパスポート試験 令和7年度分",
+          "vi": "Đề thi IT Passport đợt năm Reiwa 7 (năm 2025)"
+        },
+        "category": {
+          "id": "it-passport",
+          "name": "IT Passport"
+        },
+        "image": "https://images.unsplash.com/photo-1545569341-9eb8b30979d9?q=80&w=870&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+        "duration": 120,
+        "questionCount": 100,
+        "description": {
+          "en": "Official IT Passport Exam, Reiwa 7 (2025) edition. Includes questions on Strategy (questions 1-35), Management (questions 36-55), and Technology (questions 56-100).",
+          "ja": "ITパスポート試験 令和7年度分。ストラテジ系（問1〜35）、マネジメント系（問36〜55）、テクノロジ系（問56〜100）に関する問題を含みます。",
+          "vi": "Đề thi chính thức kỳ thi IT Passport đợt năm Reiwa 7 (năm 2025). Bao gồm các câu hỏi về Chiến lược (câu 1-35), Quản lý (câu 36-55) và Công nghệ (câu 56-100)."
+        },
+        "participants": 39,
+        "rating": 3.8,
+        "ratingCount": 5
+      }
+    ],
+    "path": "/api/exams"
+  }
+}
